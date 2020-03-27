@@ -1,4 +1,5 @@
 
+[bits 16]
 read_boot_sec:
     pusha
     mov ax,BOOT_CODE_SEGMENT 
