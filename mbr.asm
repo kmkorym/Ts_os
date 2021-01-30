@@ -1,5 +1,6 @@
 ;code section
 bits 16
+KERNEL_LOADED_ADDRESS equ 0x9000
 org 0x7c00
 ;; just print something
 mov bx,HELLO_STRING
@@ -23,15 +24,32 @@ mov ss, bp
 
 
 
-;load 512 byte to memery and print
-mov bx, 0x9000 ; es:bx = 0x0000:0x9000 = 0x09000
+;load 1024 byte to memery and print
+mov bx, KERNEL_LOADED_ADDRESS ; es:bx = 0x0000:0x9000 = 0x09000
 mov dh, 2 ; read 2 sectors
 call disk_load
-mov bx, 0x9000+512; first word from second loaded sector, 0xface
-call printl
-jmp $
+;mov bx, 0x9000+512; first word from second loaded sector, 0xface
+;call printl
+;jmp $
 
+;switch to protected mode
 
+cli;
+mov eax,GDT_TABLE_DESC
+lgdt [eax]
+
+mov eax , cr0 ; To make the switch to protected mode , we set
+or eax , 0x1 ; the first bit of CR0 , a control register
+mov cr0 , eax
+
+mov esp, 0x90000
+mov ax, 0x10      ; 0x10 is the offset in the GDT to our data segment
+mov ds, ax        ; Load all data segment selectors
+mov es, ax
+mov fs, ax
+mov gs, ax
+mov ss, ax
+jmp 0x08:(START32-GDT_BASE+KERNEL_LOADED_ADDRESS)
 
 printl:
     call print
@@ -69,14 +87,40 @@ print_nl:
 ;data section
 HELLO_STRING:
 db "hello world",0
-times 510-($-$$) db 0
-dw 0xAA55
-
-MDFK_STRING:
-db "MDFK",0
-times 507 db 0
-
 MDFK_STRING2:
 db "MDFK2",0
-times 506 db 0
+
+GDT_TABLE_DESC:
+    dw GDT_END-GDT_BASE-1 ; size of table
+    dd KERNEL_LOADED_ADDRESS
+
+times 510-($-$$) db 0
+dw 0xAA55
+GDT_BASE:
+dw 0x00 ; NULL selector
+dw 0x00
+dw 0x00
+dw 0x00
+GDT_CODE:
+dw 0xFFFF ; limit
+dw 0x00 ;base
+db 0x00 ; base
+db 10011010b     ; access byte
+db 11001111b     ; flag G=1 D=1
+db 0x00 ; base
+GDT_DATA:
+dw 0xFFFF ; limit
+dw 0x00 ; base
+db 0x00 ; base
+db 10010010b    ; access byte
+db 11001111b     ; flag G=1 D=1
+db 0x00 ; base
+GDT_END:
+
+START32:
+[bits 32]
+jmp $
+
+
+times 2048 - ($-$$) db 0
 
