@@ -1,11 +1,17 @@
-section .text
 global _start
+section .text
 _start:
-mov ebx,TD
 [bits 32]
-[extern fake_print]
-# call  fake_print
+[extern main]
+call  main
+[extern test_call]
+pusha
+push 0x55
+push 0x66
+
+call test_call
+popa
+# sti
+# sti
 jmp $
 
-TD:
-    dw "test data",0

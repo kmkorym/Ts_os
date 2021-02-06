@@ -1,24 +1,45 @@
+# run_debug:
+#	qemu-system-i386 -boot order=a -fda kdgimage
+
+
+# build_debug: boot.bin dbg_kernel.bin
+#	cat boot.bin dbg_kernel.bin >kdgimage
+
+# dbg_kernel.bin:
+
 run:
 	qemu-system-i386 -boot order=a -fda kimage
 
-build: kimage
-
-kimage: boot.bin kernel.bin
+build: boot.bin kernel.bin kernel.sym
 	cat boot.bin kernel.bin > kimage
 
-kernel.bin: kernel_entry.o util.o
-	ld -m elf_i386 -o kernel.bin -Ttext 0x9527  kernel_entry.o util.o --oformat binary
+kernel.bin: kernel.elf
+	objcopy kernel.elf -O binary kernel.bin
+
+kernel.sym: kernel.elf
+	objcopy --only-keep-debug kernel.elf kernel.sym
+
+kernel.elf: kernel_entry.o   main.o  util.o print.o
+	ld -m elf_i386 -nostdlib  -T linker.ld  $^ -o kernel.elf
 
 kernel_entry.o:
-	nasm kernel_entry.asm -f elf -o kernel_entry.o
+	nasm kernel_entry.asm -f elf32  -o kernel_entry.o
+
+print.o:
+	gcc -m32 -ffreestanding -c   print.c -g -o print.o
 
 util.o:
-	gcc -m32 -ffreestanding -c uitl.c  -o util.o
+	gcc -m32 -ffreestanding -c   uitl.c -g -o util.o
+
+main.o:
+	gcc -m32 -ffreestanding -c  main.c -g -o main.o
 
 boot.bin:
 	nasm  -f bin mbr.asm  -o boot.bin 
 
+
+
 clean:
-	rm boot.bin kernel.bin kernel_entry.o util.o kernel_entry.o
+	rm *.bin  *.o
   
 	
