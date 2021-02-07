@@ -6,13 +6,14 @@ int main(){
     char* s = "NMSL";
     char* b = &s[0];
     char a = s[0];
-    
+    clear();
+    /*
     print_char('K');
     printl("");
  
     
     
-    /*
+    
     print_char('?');
     print_char('N');
     print_char('M');

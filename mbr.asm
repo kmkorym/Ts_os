@@ -27,7 +27,7 @@ mov ss, bp
 
 ;load 1024 byte to memery and print
 mov bx, LOADED_ADDRESS ; es:bx = 0x0000:0x9000 = 0x09000
-mov dh, 2 ; read 2 sectors
+mov dh, 0xF ; read 15 sectors
 call disk_load
 ;mov bx, 0x9000+512; first word from second loaded sector, 0xface
 ;call printl
@@ -119,7 +119,6 @@ db 0x00 ; base
 GDT_END:
 # here is 0x9018
 START32:
-
 # [bits 32]
 # call  KERNEL_ENTRY_ADDRESS
 

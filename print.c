@@ -90,7 +90,14 @@ void print_hex(int x){
 
 }
 void clear(){
-
+    int i,j;
+    set_cursor(0,0);
+    for(i=0;i<VGA_MAX_ROW;++i){
+        for(j=0;j<VGA_MAX_COL;++j){
+            print_char(0);
+        }
+    }
+    set_cursor(0,0);
 }
 
 
