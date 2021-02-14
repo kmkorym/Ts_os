@@ -1,31 +1,17 @@
-#include "print.h"
+#include "../lib/print.h"
+#include "../drivers/timer.h"
+#include "../drivers/keyboard.h"
+#include "../drivers/com.h"
+#include "./common.h"
 
 #define IRQ_MAX 63
 
-typedef unsigned int uint32_t;
-typedef unsigned short  uint16_t;
-typedef unsigned char uint8_t ;
+void  init_devices(){
+    init_timer();
+    init_kb();
+    init_serial();
 
-
-void outb(uint16_t port, uint8_t value)
-{
-    asm volatile ("outb %1, %0" : : "dN" (port), "a" (value));
 }
-
-uint8_t inb(uint16_t port)
-{
-   uint8_t ret;
-   asm volatile("inb %1, %0" : "=a" (ret) : "dN" (port));
-   return ret;
-}
-
-uint16_t inw(uint16_t port)
-{
-   uint16_t  ret;
-   asm volatile ("inw %1, %0" : "=a" (ret) : "dN" (port));
-   return ret;
-}
-
 
 
 struct idt_ptr_struct
@@ -47,38 +33,9 @@ struct IDTDesc {
 
 extern struct idt_ptr_struct IDT_TABLE_DESC; // note  idt_ptr_struct*  is wrong
 struct IDTDesc idt[IRQ_MAX+1];
-int cnt=1;
 
 
-void  irq_handler_entry( uint32_t irq, uint32_t err_code){
-    printl("Int");
-    print_hex(irq);
-    printl("");
-    printl("Err code");
-    print_hex(err_code);
-    printl("");
-    cnt+=1;
-    if(cnt>=10){
-        while(1);
-    }
-
-}
-
-void init_trap_gate(uint8_t irq,uint32_t  handler_offset,uint16_t selector){   
-    idt[irq].offset_1 = handler_offset & 0xFFFF;
-    idt[irq].offset_2 = (handler_offset >> 16) & 0xFFFF;
-    idt[irq].selector = selector;
-    idt[irq].zero = 0;
-    idt[irq].type_attr = 0x8E;
-    
-}
-
-#define INIT_IRQ(n) \
-extern void isr##n();\
-init_trap_gate((n),(uint32_t)isr##n,0x08);
-
-void init_idt(){
-
+void config_pic(){
     //remap interrupt
     outb(0x20, 0x11);
     outb(0xA0, 0x11);
@@ -90,8 +47,45 @@ void init_idt(){
     outb(0xA1, 0x01);
     outb(0x21, 0x0);
     outb(0xA1, 0x0);
+}
 
 
+void  irq_handler_entry( uint32_t irq, uint32_t err_code){
+    switch(irq){
+
+        case 32:
+            timer_handler();
+            break;
+        case 33:
+            kb_handler();
+            break;
+    }
+
+    if (irq >= 40){
+         outb(0xA0, 0x20);
+    }
+    if(irq>=32){
+        // must slave first..
+        // https://wiki.osdev.org/User:Johnburger/PIC
+        // Send reset signal to master. (As well as slave, if necessary).
+        outb(0x20, 0x20);
+    }
+}
+
+void init_trap_gate(uint8_t irq,uint32_t  handler_offset,uint16_t selector){   
+    idt[irq].offset_1 = handler_offset & 0xFFFF;
+    idt[irq].offset_2 = (handler_offset >> 16) & 0xFFFF;
+    idt[irq].selector = selector;
+    idt[irq].zero = 0;
+    idt[irq].type_attr = 0x8E; 
+}
+
+#define INIT_IRQ(n) \
+extern void isr##n();\
+init_trap_gate((n),(uint32_t)isr##n,0x08);
+
+void init_idt(){
+    config_pic();
     INIT_IRQ(0);
     INIT_IRQ(1);
     INIT_IRQ(2);
@@ -161,13 +155,3 @@ void init_idt(){
     IDT_TABLE_DESC.base =  (uint32_t)&idt;
     return;
 }
-
-
-
-    // INIT_IRQ(0);
- 
-
-
-    // IDT_TABLE_DESC.limit = sizeof(struct IDTDesc)*( IRQ_MAX+1)-1;
-    // IDT_TABLE_DESC.base =  (uint32_t)&idt;
-    //return;

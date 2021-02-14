@@ -82,7 +82,8 @@ print_nl:
     int 0x10
     ret
 
-%include "disk.asm"
+
+%include "boot/disk.asm"
 
 
 ;data section

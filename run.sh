@@ -1,3 +1,7 @@
 make clean
 make build
-make run
+make deploy
+make run 
+
+
+

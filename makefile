@@ -1,16 +1,29 @@
-# run_debug:
-#	qemu-system-i386 -boot order=a -fda kdgimage
+CFLAGS = -m32 -ffreestanding  -g 
+HEADERS = $(wildcard kernel/*.h  drivers/*.h lib/*.h)
+C_SOURCES = $(wildcard kernel/*.c drivers/*.c lib/*.c)
+OBJS = ${C_SOURCES:.c=.o}
+RUN_OPTIONS = -boot order=a -fda build/kimage -chardev pipe,mux=on,id=sp0,path=/home/uabharuhi/Desktop/com1 \
+-mon chardev=sp0,mode=readline  -serial chardev:sp0
 
 
-# build_debug: boot.bin dbg_kernel.bin
-#	cat boot.bin dbg_kernel.bin >kdgimage
+run: 
+	qemu-system-i386  ${RUN_OPTIONS}
 
-# dbg_kernel.bin:
+debug: 
+	qemu-system-i386 ${RUN_OPTIONS} -S -s &
+	gdb -ex 'target remote localhost:1234' \
+		-ex 'set architecture i386' \
+		-ex 'symbol-file build/kernel.sym'\  
+		-ex 'b main'\
+		-ex 'c'
 
-run:
-	qemu-system-i386 -boot order=a -fda kimage
+deploy: kimage boot.bin kernel.bin kernel_entry.o  kernel.elf kernel.sym  ${OBJS}
+	mv   $^  build/
 
-build: boot.bin kernel.bin kernel.sym 
+build: kimage
+
+
+kimage: boot.bin kernel.bin kernel.sym 
 	cat boot.bin kernel.bin > kimage
 	truncate -s 1MB kimage
 
@@ -20,31 +33,21 @@ kernel.bin: kernel.elf
 kernel.sym: kernel.elf
 	objcopy --only-keep-debug kernel.elf kernel.sym
 
-kernel.elf: kernel_entry.o   main.o  util.o print.o isr.o
-	ld -m elf_i386 -nostdlib  -T linker.ld  $^ -o kernel.elf
+kernel.elf: kernel_entry.o  ${OBJS}
+	ld -m elf_i386 -nostdlib  -T linker.ld  $^ -o $@
+
+%.o: %.c
+	gcc ${CFLAGS} -ffreestanding -c $< -o $@
 
 
 kernel_entry.o:
-	nasm kernel_entry.asm -f elf32  -o kernel_entry.o
-
-isr.o:
-	gcc -m32 -ffreestanding -c   isr.c -g -o isr.o
-
-print.o:
-	gcc -m32 -ffreestanding -c   print.c -g -o print.o
-
-util.o:
-	gcc -m32 -ffreestanding -c   uitl.c -g -o util.o
-
-main.o:
-	gcc -m32 -ffreestanding -c  main.c -g -o main.o
+	nasm boot/kernel_entry.asm -f elf32  -o kernel_entry.o 
 
 boot.bin:
-	nasm  -f bin mbr.asm  -o boot.bin 
-
+	nasm  -f bin boot/mbr.asm  -o boot.bin 
 
 
 clean:
-	rm *.bin  *.o
+	rm  build/*
   
 	

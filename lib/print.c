@@ -43,14 +43,28 @@ void __move_cursor_next(){
     }
 }
 
+void show_prompt(){
+}
+
 void print_char(char c){
     if(c=='\n'){
-        __move_cursor_next_line();return;
+        __move_cursor_next_line();
+        if(current_y==0){
+            clear();
+        }
+        return;
     }
     char* p = (char*) __current_vga_addr();
     *p=c;
     __move_cursor_next();
+       
+    if(current_x ==0 && current_y==0){
+        clear();
+    }
+
+    show_prompt();
 }
+
 
 void printstr(char * s){
     while(*s){
@@ -91,10 +105,11 @@ void print_hex(int x){
 }
 void clear(){
     int i,j;
-    set_cursor(0,0);
+    char* p;
     for(i=0;i<VGA_MAX_ROW;++i){
         for(j=0;j<VGA_MAX_COL;++j){
-            print_char(0);
+            p=(char*) __vga_addr(j,i);
+            *p=0;
         }
     }
     set_cursor(0,0);

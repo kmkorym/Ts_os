@@ -4,34 +4,17 @@ _start:
 [bits 32]
 [extern main]
 [extern test_call]
-[extern init_idt]
+
 
 call  main
 
 
-
-
-call init_idt
-
 mov eax,IDT_TABLE_DESC
 lidt [eax]  
 sti
-
-# sti
-
-
-
-int 0x3
-
-
-# cli
-int 0x4
-
-# sti
 jmp $
 
-# https://stackoverflow.com/questions/491613/do-i-have-to-pop-the-error-code-pushed-to-stack-by-certain-exceptions-before-ret
-# exception 8 is timer interrupt ...
+
 global IDT_TABLE_DESC
 IDT_TABLE_DESC:
     dw 0
