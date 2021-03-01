@@ -46,6 +46,24 @@ void __move_cursor_next(){
 void show_prompt(){
 }
 
+void print_screen(char c,unsigned int x,unsigned int y){
+    if(x>=VGA_MAX_COL){
+        x = VGA_MAX_COL-1;
+    }
+    if(y>=VGA_MAX_ROW ){
+        y = VGA_MAX_ROW -1;
+    }
+    char* p = (char*) __vga_addr(x,y);
+    *p=c;
+}
+
+
+void back_char(){
+    if(current_x>0){
+        print_screen(0,--current_x,current_y);
+    }
+}
+
 void print_char(char c){
     if(c=='\n'){
         __move_cursor_next_line();

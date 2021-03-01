@@ -1,3 +1,5 @@
+#ifndef PRINT_H
+#define PRINT_H
 unsigned int   __vga_addr(unsigned int x,unsigned int y);
 unsigned int    __current_vga_addr();
 void __move_cursor_next();
@@ -8,3 +10,6 @@ void printstr(char * s);
 void printl(char * s);
 void print_hex(int);
 void clear();
+void print_screen(char c,unsigned int x,unsigned int y);
+void back_char();
+#endif

@@ -1,4 +1,5 @@
 void init_idt();
+void init_devices();
 void init_timer();
 void init_kb();
 int init_serial();

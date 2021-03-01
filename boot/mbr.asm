@@ -27,7 +27,7 @@ mov ss, bp
 
 ;load 1024 byte to memery and print
 mov bx, LOADED_ADDRESS ; es:bx = 0x0000:0x9000 = 0x09000
-mov dh, 0xF ; read 15 sectors
+mov dh, 0x30 ; read 15 sectors
 call disk_load
 ;mov bx, 0x9000+512; first word from second loaded sector, 0xface
 ;call printl
@@ -43,6 +43,7 @@ mov eax , cr0 ; To make the switch to protected mode , we set
 or eax , 0x1 ; the first bit of CR0 , a control register
 mov cr0 , eax
 
+mov ebp, 0x90000
 mov esp, 0x90000
 mov ax, 0x10      ; 0x10 is the offset in the GDT to our data segment
 mov ds, ax        ; Load all data segment selectors

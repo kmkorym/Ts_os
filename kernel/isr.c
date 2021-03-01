@@ -51,6 +51,12 @@ void config_pic(){
 
 
 void  irq_handler_entry( uint32_t irq, uint32_t err_code){
+    
+    if (irq!=32 && irq!=33  ){
+        print_char('Q');
+        printl("");
+    }
+    
     switch(irq){
 
         case 32:
@@ -58,6 +64,9 @@ void  irq_handler_entry( uint32_t irq, uint32_t err_code){
             break;
         case 33:
             kb_handler();
+            break;
+        case 36:
+            com1_handler();
             break;
     }
 

@@ -15,6 +15,7 @@ sti
 jmp $
 
 
+
 global IDT_TABLE_DESC
 IDT_TABLE_DESC:
     dw 0

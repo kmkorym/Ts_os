@@ -2,8 +2,7 @@ CFLAGS = -m32 -ffreestanding  -g
 HEADERS = $(wildcard kernel/*.h  drivers/*.h lib/*.h)
 C_SOURCES = $(wildcard kernel/*.c drivers/*.c lib/*.c)
 OBJS = ${C_SOURCES:.c=.o}
-RUN_OPTIONS = -boot order=a -fda build/kimage -chardev pipe,mux=on,id=sp0,path=/home/uabharuhi/Desktop/com1 \
--mon chardev=sp0,mode=readline  -serial chardev:sp0
+RUN_OPTIONS = -boot order=a -fda build/kimage -chardev pipe,id=sp0,path=/home/uabharuhi/Desktop/com1  -serial chardev:sp0  
 
 
 run: 
@@ -13,9 +12,13 @@ debug:
 	qemu-system-i386 ${RUN_OPTIONS} -S -s &
 	gdb -ex 'target remote localhost:1234' \
 		-ex 'set architecture i386' \
-		-ex 'symbol-file build/kernel.sym'\  
-		-ex 'b main'\
-		-ex 'c'
+		-ex 'symbol-file build/kernel.sym'\
+		-ex 'b kernel/shell.c:42'\
+		-ex 'b kernel/isr.c:56'\
+		-ex 'layout asm'\
+		-ex 'l'\
+
+
 
 deploy: kimage boot.bin kernel.bin kernel_entry.o  kernel.elf kernel.sym  ${OBJS}
 	mv   $^  build/
@@ -41,7 +44,7 @@ kernel.elf: kernel_entry.o  ${OBJS}
 
 
 kernel_entry.o:
-	nasm boot/kernel_entry.asm -f elf32  -o kernel_entry.o 
+	nasm  boot/kernel_entry.asm  -f elf32  -o kernel_entry.o 
 
 boot.bin:
 	nasm  -f bin boot/mbr.asm  -o boot.bin 
