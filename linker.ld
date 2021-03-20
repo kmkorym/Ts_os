@@ -1,6 +1,6 @@
 OUTPUT_FORMAT(elf32-i386)
 ENTRY(_start)
-phys = 0x9018;
+phys = 0x9030;
 SECTIONS
 {
   .text phys : AT(phys) {

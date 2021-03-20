@@ -6,6 +6,7 @@
 
 #define IRQ_MAX 63
 
+
 void  init_devices(){
     init_timer();
     init_kb();
@@ -51,10 +52,13 @@ void config_pic(){
 
 
 void  irq_handler_entry( uint32_t irq, uint32_t err_code){
-    
+    //print_hex();
+
     if (irq!=32 && irq!=33  ){
-        print_char('Q');
+        printstr("handler #");
+        print_hex(irq);
         printl("");
+
     }
     
     switch(irq){

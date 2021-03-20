@@ -2,7 +2,7 @@ CFLAGS = -m32 -ffreestanding  -g
 HEADERS = $(wildcard kernel/*.h  drivers/*.h lib/*.h)
 C_SOURCES = $(wildcard kernel/*.c drivers/*.c lib/*.c)
 OBJS = ${C_SOURCES:.c=.o}
-RUN_OPTIONS = -boot order=a -fda build/kimage -chardev pipe,id=sp0,path=/home/uabharuhi/Desktop/com1  -serial chardev:sp0  
+RUN_OPTIONS = -boot order=a -fda build/kimage -chardev pipe,id=sp0,path=/home/uabharuhi/Desktop/com1  -serial chardev:sp0  -D ./qlog.txt
 
 
 run: 
@@ -13,10 +13,28 @@ debug:
 	gdb -ex 'target remote localhost:1234' \
 		-ex 'set architecture i386' \
 		-ex 'symbol-file build/kernel.sym'\
-		-ex 'b kernel/shell.c:42'\
-		-ex 'b kernel/isr.c:56'\
+		-ex 'b kernel/task.c:90'\
+		-ex 'b isr0'\
+		-ex 'b isr1'\
+		-ex 'b isr2'\
+		-ex 'b isr3'\
+		-ex 'b isr4'\
+		-ex 'b isr5'\
+		-ex 'b isr6'\
+		-ex 'b isr7'\
+		-ex 'b isr8'\
+		-ex 'b isr9'\
+		-ex 'b isr10'\
+		-ex 'b isr11'\
+		-ex 'b isr12'\
+		-ex 'b isr13'\
+		-ex 'b isr14'\
+		-ex 'b isr15'\
+		-ex 'b isr36'\
+		-ex 'b kill_and_reschedule'\
 		-ex 'layout asm'\
 		-ex 'l'\
+
 
 
 
@@ -51,6 +69,6 @@ boot.bin:
 
 
 clean:
-	rm  build/*
+	rm  build/* 
   
 	

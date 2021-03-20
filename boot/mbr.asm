@@ -1,7 +1,6 @@
 ;code section
 [bits 16]
 LOADED_ADDRESS equ 0x9000
-KERNEL_ENTRY_ADDRESS equ 0x9018
 [org 0x7c00]
 ;; just print something
 mov bx,HELLO_STRING
@@ -118,10 +117,29 @@ db 0x00 ; base
 db 10010010b    ; access byte
 db 11001111b     ; flag G=1 D=1
 db 0x00 ; base
+USR_CODE:
+dw 0xFFFF ; limit
+dw 0x00 ;base
+db 0x00 ; base
+db 11111010b     ; access byte
+db 11001111b     ; flag G=1 D=1
+db 0x00 ; base
+USR_DATA:
+dw 0xFFFF ; limit
+dw 0x00 ; base
+db 0x00 ; base
+db 11110010b    ; access byte
+db 11001111b     ; flag G=1 D=1
+db 0x00 ; base
+TSS_SEGMENT:
+dw 0x00 ; limit
+dw 0x00 ; base
+db 0x00 ; base
+db 0x00   ; access byte
+db 0x00     ; flag G=1 D=1
+db 0x00 ; base
 GDT_END:
 # here is 0x9018
 START32:
-# [bits 32]
-# call  KERNEL_ENTRY_ADDRESS
 
 

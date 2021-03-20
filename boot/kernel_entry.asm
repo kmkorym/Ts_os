@@ -5,14 +5,25 @@ _start:
 [extern main]
 [extern test_call]
 
-
+cli
 call  main
-
+tss_flush:
+mov ax, 0x2B     
+ltr ax  
 
 mov eax,IDT_TABLE_DESC
-lidt [eax]  
-sti
-jmp $
+lidt [eax]
+
+[extern switch_to_user]
+[extern user_loop]
+push USER_START
+call switch_to_user
+
+USER_START:
+cli
+_ULOOP:
+call user_loop
+
 
 
 
@@ -47,8 +58,8 @@ IDT_TABLE_DESC:
     push eax
     mov  eax,[esp+4]
     pusha
-    push eax
-    push dword %1
+    push eax      ; error code
+    push dword %1 ; isr number  
     call irq_handler_entry
     add esp,8
     popa
@@ -57,7 +68,7 @@ IDT_TABLE_DESC:
     sti
     iret
 %endmacro
-  
+
 
 ISR_NOERRCODE 0
 ISR_NOERRCODE 1
@@ -72,7 +83,14 @@ ISR_NOERRCODE 9
 ISR_ERRCODE   10
 ISR_ERRCODE   11
 ISR_ERRCODE   12
-ISR_ERRCODE   13
+GLOBAL isr13
+[extern   kill_and_reschedule  ]
+isr13:
+  cli
+  add esp,8 ; error code + original eip
+  push dword  kill_and_reschedule
+  sti
+iret
 ISR_ERRCODE   14
 ISR_NOERRCODE 15
 ISR_NOERRCODE 16

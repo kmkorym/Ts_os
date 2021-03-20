@@ -1,14 +1,12 @@
 #include "../lib/print.h"
-#include "../kernel/isr.h"
-#include "../test/test_string.c"
+#include "isr.h"
+#include "task.h"
 int main(){
     clear();
+    setup_tss();
     init_idt();
     init_devices();
-    
-    // test_string_main();
-    
-    
+   
     
     return 0;
 }

@@ -1,5 +1,5 @@
 #include "shell.h"
-
+#include "task.h"
 // define commnads can execute when user type enter
 // halt -> quit computer
 // hello --> print hello from kernel
@@ -36,13 +36,13 @@ void parse_serial_command(char* s){
         printstr("load com1: ");
         print_hex(addr);
         printl("");
-        // load 0x50000 for test
         serial_file_transfer(addr);
-        //execute 
-        printl("execute");
-        asm volatile ("movl $0x50000,%eax");
-        asm volatile ("call %eax");
-        printl("return from main");
+        struct simple_task task;
+        task.task_id = 33;
+        task.esp = 0x8000000;
+        task.ebp = 0x8000000;
+        task.eip = addr;
+        add_task(task);
 
     }else if(string_equal("test",buffer)){
         printl("com1 test");

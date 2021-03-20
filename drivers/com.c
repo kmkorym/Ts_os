@@ -1,5 +1,6 @@
 #include "com.h"
 #include "../lib/string.h"
+#include "../kernel/task.h"
 
 #define PORT 0x3f8          // COM1
  
