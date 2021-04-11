@@ -7,22 +7,27 @@ _start:
 
 cli
 call  main
-tss_flush:
-mov ax, 0x2B     
-ltr ax  
-
+;tss_flush:
+;mov ax, 0x2B     
+;ltr ax  
+DEBUG1:
 mov eax,IDT_TABLE_DESC
 lidt [eax]
 
-[extern switch_to_user]
-[extern user_loop]
-push USER_START
-call switch_to_user
+[extern  init_page_settings]
+call init_page_settings
 
-USER_START:
-cli
-_ULOOP:
-call user_loop
+jmp $
+
+
+;[extern switch_to_user]
+;[extern user_loop]
+;push USER_START
+;call switch_to_user
+
+;USER_START:
+;_ULOOP:
+;call user_loop
 
 
 

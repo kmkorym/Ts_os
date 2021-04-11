@@ -33,4 +33,7 @@ SECTIONS
   /* GNU DWARF 1 extensions */
   .debug_srcinfo  0 : { *(.debug_srcinfo) }
   .debug_sfnames  0 : { *(.debug_sfnames) }
+  .heap :{
+  	 _start_heap = ABSOLUTE(.) ;
+   }
 }

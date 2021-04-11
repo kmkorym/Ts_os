@@ -1,5 +1,6 @@
 ;code section
 [bits 16]
+; 
 LOADED_ADDRESS equ 0x9000
 [org 0x7c00]
 ;; just print something
@@ -41,8 +42,7 @@ lgdt [eax]
 mov eax , cr0 ; To make the switch to protected mode , we set
 or eax , 0x1 ; the first bit of CR0 , a control register
 mov cr0 , eax
-
-mov ebp, 0x90000
+mov ebp, 0x90000 ; 0x9000 ~ 0x9000+1MB is set page identity mapping , smust et ebp esp with safe range
 mov esp, 0x90000
 mov ax, 0x10      ; 0x10 is the offset in the GDT to our data segment
 mov ds, ax        ; Load all data segment selectors

@@ -51,6 +51,26 @@ void config_pic(){
 }
 
 
+
+void page_fault_handler(uint32_t err_code){
+    printl("error code");
+    print_hex(err_code);
+    printl("");
+
+    uint32_t cr2;
+
+    asm volatile("movl %%cr2, %0": "=r"(cr2));
+    printl("address:");
+    print_hex(cr2);
+    printl("");
+    while(1){};
+    
+
+
+}
+
+
+
 void  irq_handler_entry( uint32_t irq, uint32_t err_code){
     //print_hex();
 
@@ -62,7 +82,9 @@ void  irq_handler_entry( uint32_t irq, uint32_t err_code){
     }
     
     switch(irq){
-
+        case 14:
+            page_fault_handler(err_code);
+            break;
         case 32:
             timer_handler();
             break;

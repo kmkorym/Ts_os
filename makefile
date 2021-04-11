@@ -31,12 +31,10 @@ debug:
 		-ex 'b isr14'\
 		-ex 'b isr15'\
 		-ex 'b isr36'\
+		-ex 'b DEBUG1'\
 		-ex 'b kill_and_reschedule'\
 		-ex 'layout asm'\
 		-ex 'l'\
-
-
-
 
 deploy: kimage boot.bin kernel.bin kernel_entry.o  kernel.elf kernel.sym  ${OBJS}
 	mv   $^  build/
