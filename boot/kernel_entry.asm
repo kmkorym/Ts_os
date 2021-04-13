@@ -10,7 +10,6 @@ call  main
 ;tss_flush:
 ;mov ax, 0x2B     
 ;ltr ax  
-DEBUG1:
 mov eax,IDT_TABLE_DESC
 lidt [eax]
 

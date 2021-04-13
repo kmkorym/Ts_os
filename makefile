@@ -31,7 +31,7 @@ debug:
 		-ex 'b isr14'\
 		-ex 'b isr15'\
 		-ex 'b isr36'\
-		-ex 'b DEBUG1'\
+		-ex 'b test_page'\
 		-ex 'b kill_and_reschedule'\
 		-ex 'layout asm'\
 		-ex 'l'\
