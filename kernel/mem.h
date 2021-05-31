@@ -7,3 +7,4 @@
 #define PAGE_DIRTY 0x80
 #define FRAME_SIZE 4096
 void init_page_settings();
+void setup_page_tables();

@@ -4,20 +4,21 @@ _start:
 [bits 32]
 [extern main]
 [extern test_call]
+[extern  init_page_settings]
+[extern irq_handler_entry]
+[extern user_loop]
 
-cli
 call  main
+
 ;tss_flush:
 ;mov ax, 0x2B     
 ;ltr ax  
 mov eax,IDT_TABLE_DESC
 lidt [eax]
 
-[extern  init_page_settings]
-call init_page_settings
 
-jmp $
-
+; must init user space page tables ...
+;call init_page_settings
 
 ;[extern switch_to_user]
 ;[extern user_loop]
@@ -28,6 +29,8 @@ jmp $
 ;_ULOOP:
 ;call user_loop
 
+sti
+call user_loop
 
 
 
@@ -35,11 +38,6 @@ global IDT_TABLE_DESC
 IDT_TABLE_DESC:
     dw 0
     dd 0
-
-
-
-[extern irq_handler_entry]
-
 
 %macro ISR_NOERRCODE 1  ; define a macro, taking one parameter
   [GLOBAL isr%1]        ; %1 accesses the first parameter.
@@ -148,3 +146,26 @@ ISR_NOERRCODE 62
 ISR_NOERRCODE 63
 
 
+
+[SECTION .kernel_setup]
+[extern _kernel_setup_end]
+[extern __kernel_size]
+mov eax,_kernel_setup_end
+add ebx,eax
+mov ecx, __kernel_size
+mov edx,0xC0800000
+
+
+; start mov kernel
+copy_kernel:
+cmp ecx,0
+je end_copy_kernel
+mov  eax,[ebx]
+mov  [edx],eax
+inc edx
+inc ebx
+dec ecx
+jmp copy_kernel ; //this is relative jump
+end_copy_kernel:
+mov edx,0xC0800000
+jmp edx

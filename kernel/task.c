@@ -66,7 +66,7 @@ void setup_tss(){
     uint32_t limit = base + sizeof(tss_entry);   
     gdt_set_gate(TSS_SEGMENT,base,limit,0xE9,0x00);
     tss_entry.ss0  = 0x10;  // Set the kernel stack segment.
-    tss_entry.esp0 = 0x90000; // Set the kernel stack pointer.
+    tss_entry.esp0 = 0x15F000; // Set the kernel stack pointer.
 }
 
 
@@ -91,8 +91,8 @@ void execute_task(){
     asm volatile ( 
                     "pushal \n\t"
                     "movl %%esp,%0 \n\t"
-                    "movl %1,%%eax \n\t"
-                    "movl %2,%%eax \n\t"
+                    "movl %1,%%esp \n\t"
+                    "movl %2,%%ebp \n\t"
                     "movl %3,%%eax \n\t"
                     "call *%%eax \n\t"
                     "popal"

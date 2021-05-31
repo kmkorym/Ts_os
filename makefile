@@ -1,4 +1,4 @@
-CFLAGS = -m32 -ffreestanding  -g 
+CFLAGS = -m32 -ffreestanding  -g -fno-asynchronous-unwind-tables
 HEADERS = $(wildcard kernel/*.h  drivers/*.h lib/*.h)
 C_SOURCES = $(wildcard kernel/*.c drivers/*.c lib/*.c)
 OBJS = ${C_SOURCES:.c=.o}
@@ -13,38 +13,21 @@ debug:
 	gdb -ex 'target remote localhost:1234' \
 		-ex 'set architecture i386' \
 		-ex 'symbol-file build/kernel.sym'\
-		-ex 'b kernel/task.c:90'\
-		-ex 'b isr0'\
-		-ex 'b isr1'\
-		-ex 'b isr2'\
-		-ex 'b isr3'\
-		-ex 'b isr4'\
-		-ex 'b isr5'\
-		-ex 'b isr6'\
-		-ex 'b isr7'\
-		-ex 'b isr8'\
-		-ex 'b isr9'\
-		-ex 'b isr10'\
-		-ex 'b isr11'\
-		-ex 'b isr12'\
-		-ex 'b isr13'\
-		-ex 'b isr14'\
-		-ex 'b isr15'\
-		-ex 'b isr36'\
-		-ex 'b test_page'\
-		-ex 'b kill_and_reschedule'\
 		-ex 'layout asm'\
 		-ex 'l'\
 
-deploy: kimage boot.bin kernel.bin kernel_entry.o  kernel.elf kernel.sym  ${OBJS}
+deploy: kimage boot.bin early_setup.bin early_setup.elf  kernel.bin   kernel/init_mem.o early_setup.o kernel_entry.o  kernel.elf kernel.sym early_setup.sym  ${OBJS}
 	mv   $^  build/
+
+%.o: %.c
+	gcc ${CFLAGS} -ffreestanding -c $< -o $@
 
 build: kimage
 
 
-kimage: boot.bin kernel.bin kernel.sym 
-	cat boot.bin kernel.bin > kimage
-	truncate -s 1MB kimage
+kimage: boot.bin early_setup.bin kernel.bin  kernel.sym early_setup.sym 
+	cat boot.bin  early_setup.bin  kernel.bin > kimage
+	truncate -s 1M kimage
 
 kernel.bin: kernel.elf
 	objcopy kernel.elf -O binary kernel.bin
@@ -55,18 +38,26 @@ kernel.sym: kernel.elf
 kernel.elf: kernel_entry.o  ${OBJS}
 	ld -m elf_i386 -nostdlib  -T linker.ld  $^ -o $@
 
-%.o: %.c
-	gcc ${CFLAGS} -ffreestanding -c $< -o $@
+early_setup.bin: early_setup.elf
+	objcopy early_setup.elf -O binary early_setup.bin
 
+early_setup.sym: early_setup.elf
+	objcopy --only-keep-debug   early_setup.elf   early_setup.sym
+
+early_setup.elf: early_setup.o  kernel/init_mem.o lib/print.o
+	ld -m elf_i386 -nostdlib  -T esetup.ld  $^ -o $@
+
+kernel/init_mem.o:
+	gcc ${CFLAGS} -ffreestanding  -D EARLY_INIT -c kernel/mem.c -o kernel/init_mem.o
 
 kernel_entry.o:
 	nasm  boot/kernel_entry.asm  -f elf32  -o kernel_entry.o 
 
+early_setup.o:
+	nasm  boot/early_setup.asm  -f elf32  -o early_setup.o 
+
 boot.bin:
 	nasm  -f bin boot/mbr.asm  -o boot.bin 
 
-
 clean:
 	rm  build/* 
-  
-	

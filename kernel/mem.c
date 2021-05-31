@@ -1,11 +1,19 @@
 #include "mem.h"
-
+#define _1MB  0x100000
 #define PAGE_DIR_INDEX(addr)(addr>>22)
 #define PAGE_TABLE_INDEX(addr)((addr>>12)&0x3FF)
 #define PAGE_OFFSET(addr)(addr&(~0xFFFFF000))
 #define PAGE_TABLE_START(dir_idx)((uint32_t)page_table+4096*dir_idx)
 #define PAGE_ALIGNED(addr)(addr% FRAME_SIZE == 0)
+#define PAGE_DIR_ADDR    (_1MB) 
 #define KERNEL_LOAD_ADDR 0x9030
+#define KERNEL_V_START   0xC0000000
+#define KERNEL_P_START  (8*_1MB)
+#define USER_P_START  (16*_1MB)
+#define KERNEL_VMAP_SIZE 0x800000
+#define MAX_MEM_SIZE (128*_1MB)
+
+
 /*
 #define KERNEL_MAX_END   0XB0000
 */
@@ -13,8 +21,12 @@
 assume our kernel in 1 MB
 set up identity paging
 */
-uint32_t  aaa  = 0x8787;                   
-uint32_t  *page_dir =    (uint32_t*) 0x100000; // max 4KB 1024*4MB = 4G
+
+
+
+//uint32_t  aaa  = 0x8787;
+uint32_t  page_dir_addr =  PAGE_DIR_ADDR;                     
+uint32_t  *page_dir =    (uint32_t*)  PAGE_DIR_ADDR; // max 4KB 1024*4MB = 4G
 uint32_t  *page_table =  (uint32_t*) 0x101000; // start from 1MB+4KB
 
 
@@ -28,7 +40,7 @@ uint32_t get_page_directory_pyhsical_address(){
 
 
 void test_page(){
-    print_hex(aaa);
+    //print_hex(aaa);
     printl("");
     uint32_t * p = ( uint32_t *)(0x9000+0x100000-4);
     //this will get page fault becuase an integer is 4 byte 
@@ -54,10 +66,6 @@ void test_page(){
     printl("page dir address");
     print_hex(p4);
     printl("");
-
-
-   
-
     //printl("page table address");
 
 }
@@ -135,6 +143,8 @@ void fill_zeros_page_dir(){
         ++p ;
     }
 
+    //TODO: initlize 4MB page table to zeros!!
+
 }
 
 
@@ -162,19 +172,64 @@ void enable_paging(){
     );
 }
 
-void init_page_settings(){
+/*
+    1.identity mapping first 1MB code (boot up code)
+    2. 1MB ~ 8MB  is for page tables (kernel space) virtual address start from 3G
+    3. 8MB ~ 16MB for kernel sections virtual address starts from 3G+8MB
+    4. 16NB ~ MAX_MEM_SIZE for user  (user space so virtual address starts from 0)
+*/
+
+// higher kernel setting settings
+void setup_page_tables(){
     fill_zeros_page_dir();
-    uint32_t start_p = KERNEL_LOAD_ADDR & (~0x3FF);
-    //init
-    int i; // set 1 MB identity mapping
-    for(i=0;i<(1024*1024/FRAME_SIZE);++i){
-        //identity mapping
-        allocate_page_tent(start_p,start_p,0);
-        start_p+=FRAME_SIZE;
+    uint32_t physical_address = 0;
+
+    //identity mapping first 1MB code (boot up code)
+    while( physical_address <  _1MB  ){
+        allocate_page_tent(physical_address,physical_address,0);
+        physical_address+= FRAME_SIZE;
     }
-    //reverse mapping for page ditectory
-    printl("1234");
-    set_reverse_mapping(1023, page_dir );
+    
+    // 1MB ~ 8MB  is for page tables (kernel space) virtual address start from 3G
+    while( physical_address <  KERNEL_P_START ){
+        // use identiy mapping first
+        //allocate_page_tent(physical_address,physical_address,0);
+        allocate_page_tent(physical_address+KERNEL_V_START,physical_address,0);
+        physical_address+= FRAME_SIZE;
+    }
+    
+   // 8MB ~ 16MB for kernel sections virtual address starts from 3G+8MB
+    while( physical_address < USER_P_START ){
+        // use identiy mapping first
+        //allocate_page_tent(physical_address,physical_address,0);
+        allocate_page_tent(physical_address+KERNEL_V_START,physical_address,0);
+        physical_address+= FRAME_SIZE;
+    }
+    /*
+    //16MB ~ 128MB : user space
+    int user_v_addr=0;
+    while( physical_address < MAX_MEM_SIZE ){
+        // use identiy mapping first
+        //allocate_page_tent(physical_address,physical_address,0);
+        allocate_page_tent(user_v_addr,physical_address,1);
+        physical_address+= FRAME_SIZE;
+        user_v_addr+=FRAME_SIZE;
+    }
+    */
+
+
+    #ifdef EARLY_INIT
+    extern int _init_end;  
+    printl("init_end");
+    print_hex((int)&_init_end);
+    #endif
+
+
+}
+
+void init_page_settings(){
+    setup_page_tables();
+    // set_reverse_mapping(1023, (uint32_t)page_dir );
     enable_paging();
     test_page();
 }

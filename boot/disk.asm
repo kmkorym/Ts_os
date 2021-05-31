@@ -28,14 +28,14 @@ disk_load:
 
 disk_error:
     mov bx, DISK_ERROR
-    call printl
+    call __printl
     ;mov dh, ah ; ah = error code, dl = disk drive that dropped the error
-    ;call print_hex ; check out the code at http://stanislavs.org/helppc/int_13-1.html
+    ;call __print_hex ; check out the code at http://stanislavs.org/helppc/int_13-1.html
     jmp disk_loop
 
 sectors_error:
     mov bx, SECTORS_ERROR
-    call printl
+    call __printl
 
 disk_loop:
     jmp $

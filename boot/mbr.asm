@@ -5,10 +5,10 @@ LOADED_ADDRESS equ 0x9000
 [org 0x7c00]
 ;; just print something
 mov bx,HELLO_STRING
-call printl
+call __printl
 
 mov bx,HELLO_STRING
-call printl
+call __printl
 
 ;init seg registers
 mov bp, 0x8000 ; set the stack safely away from us
@@ -27,14 +27,12 @@ mov ss, bp
 
 ;load 1024 byte to memery and print
 mov bx, LOADED_ADDRESS ; es:bx = 0x0000:0x9000 = 0x09000
-mov dh, 0x30 ; read 15 sectors
+mov dh, 0x36 
 call disk_load
 ;mov bx, 0x9000+512; first word from second loaded sector, 0xface
-;call printl
 ;jmp $
 
 ;switch to protected mode
-
 cli;
 mov eax,GDT_TABLE_DESC
 lgdt [eax]
@@ -42,7 +40,7 @@ lgdt [eax]
 mov eax , cr0 ; To make the switch to protected mode , we set
 or eax , 0x1 ; the first bit of CR0 , a control register
 mov cr0 , eax
-mov ebp, 0x90000 ; 0x9000 ~ 0x9000+1MB is set page identity mapping , smust et ebp esp with safe range
+mov ebp, 0x90000 ; 0x9000 ~ 0x9000+1MB is set page identity mapping , must let ebp esp with safe range
 mov esp, 0x90000
 mov ax, 0x10      ; 0x10 is the offset in the GDT to our data segment
 mov ds, ax        ; Load all data segment selectors
@@ -52,14 +50,14 @@ mov gs, ax
 mov ss, ax
 jmp 0x08:(START32-GDT_BASE+LOADED_ADDRESS)
 
-printl:
-    call print
-    call print_nl
+__printl:
+    call __print
+    call __print_nl
     ret
 
 ;print string 
 ;string_base in ebx
-print:
+__print:
     mov ah, 0x0e ; tty mode
     .loop_start:
     mov al,[bx]
@@ -74,7 +72,7 @@ print:
 
 
 ;print new line
-print_nl:
+__print_nl:
     ;NL EQU  0x0a,0x0d
     mov al, 0x0a
     int 0x10

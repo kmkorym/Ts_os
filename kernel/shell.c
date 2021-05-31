@@ -27,7 +27,7 @@ void parse_serial_command(char* s){
     if(string_equal("print",buffer)){
         printl("execute sp print");
     }else if(string_equal("load",buffer)){
-        uint32_t addr;
+        uint32_t addr=0;
         uint32_t cnt=0;
         int res=0;
         s = strtok(s," ",buffer);
