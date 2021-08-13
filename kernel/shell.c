@@ -39,8 +39,8 @@ void parse_serial_command(char* s){
         serial_file_transfer(addr);
         struct simple_task task;
         task.task_id = 33;
-        task.esp = 0x8000000;
-        task.ebp = 0x8000000;
+        task.esp = 0x50000;
+        task.ebp = 0x50000;
         task.eip = addr;
         add_task(task);
 

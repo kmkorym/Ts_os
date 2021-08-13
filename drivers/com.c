@@ -72,7 +72,8 @@ uint32_t serial_file_transfer(uint32_t mem_addr){
 
    while(rx_total < expected_bytes){
       rx_cnt = read_bytes(buffer,BUF_SIZE,expected_bytes-rx_total);
-      strncpy(buffer,(char*)(mem_addr+rx_total),rx_cnt);
+      // don't use strncpy because address can be zero (null) and strncpy won't copy null
+      memcpy(buffer,(char*)(mem_addr+rx_total),rx_cnt);
       rx_total += rx_cnt;
    }
    // printl((char*)mem_addr);

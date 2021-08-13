@@ -6,5 +6,9 @@
 #define PAGE_WT 0x8
 #define PAGE_DIRTY 0x80
 #define FRAME_SIZE 4096
+#ifdef EARLY_INIT
 void init_page_settings();
 void setup_page_tables();
+#else
+void patch_page_table_k();
+#endif

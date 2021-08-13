@@ -1,36 +1,23 @@
 OUTPUT_FORMAT(elf32-i386)
-ENTRY(_start)
+ENTRY(_start_early_init)
+
 SECTIONS
 {
-   . = 0;
-   .kernel_setup :{
-        /* all code in kernel setup must be position independant*/
-        *(.kernel_setup)
+   . = 0x9030;
+   .text :{
+    *(.text)
+    *(.rodata)
+   }
+   .data :{
+    *(.data)
+    *(.bss)
+   }
+    .end1 :{
+      *(.end1)
     }
-     _kernel_setup_end = . ;
-
-    . = 0xC0800000;
-    _kernel_start =  . ;
-    
-    _stext = ADDR(.text) ;
-    .text :  AT ( _kernel_setup_end) {
-     *(.text);
-     *(.rodata);
-   }
-   _etext = . ;
-   _lstext =  LOADADDR(.text);
-   _letext =  LOADADDR(.text)+SIZEOF(.text);
-
-    _sdata = ADDR(.data) ;
-   .data : AT(LOADADDR(.text)+SIZEOF(.text)){
-    *(.data);
-    *(.bss);
-   }
+   _init_end = . ;
+  
    
-    _edata = . ;
-   _lsdata =  LOADADDR(.data);
-   _ledata = LOADADDR(.data)+SIZEOF(.data);
-
 /* Stabs debugging sections.  */
   .stab          0 : { *(.stab) }
   .stabstr       0 : { *(.stabstr) }
@@ -48,4 +35,5 @@ SECTIONS
   /* GNU DWARF 1 extensions */
   .debug_srcinfo  0 : { *(.debug_srcinfo) }
   .debug_sfnames  0 : { *(.debug_sfnames) }
+
 }

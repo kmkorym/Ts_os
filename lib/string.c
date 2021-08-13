@@ -25,6 +25,11 @@ void strcpy(const char*src,char*dst){
     while(*dst++=*src++);
 }
 
+// copy from address src to address dst
+void memcpy(char*src,char*dst,uint32_t n){
+    while(n--){*dst++=*src++;}
+}
+
 void strncpy(char*src,char*dst,uint32_t n){
     if(!src || !dst){
         return; // or print error?

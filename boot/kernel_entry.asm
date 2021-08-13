@@ -8,14 +8,23 @@ _start:
 [extern irq_handler_entry]
 [extern user_loop]
 
+start_main:
+mov eax,GDT_DESC2
+sgdt [eax]
+mov eax,GDT_DESC2+2
+mov ebx,0xC0709000
+mov [eax],ebx
 call  main
+after_main:
+
 
 ;tss_flush:
 ;mov ax, 0x2B     
 ;ltr ax  
+mov eax,GDT_DESC2
+lgdt [eax]
 mov eax,IDT_TABLE_DESC
 lidt [eax]
-
 
 ; must init user space page tables ...
 ;call init_page_settings
@@ -30,8 +39,15 @@ lidt [eax]
 ;call user_loop
 
 sti
-call user_loop
+jmp $
 
+;call user_loop
+
+
+GDT_DESC2:
+    dw 0x1f ; size of table
+    dd 0xC0709000
+        
 
 
 global IDT_TABLE_DESC
@@ -149,23 +165,58 @@ ISR_NOERRCODE 63
 
 [SECTION .kernel_setup]
 [extern _kernel_setup_end]
-[extern __kernel_size]
-mov eax,_kernel_setup_end
-add ebx,eax
-mov ecx, __kernel_size
-mov edx,0xC0800000
+[extern _letext]
+[extern _lstext]
+[extern _stext]
+[extern _ledata]
+[extern _lsdata]
+[extern _sdata]
 
+; start load address of kernel is saved in ebx, this address is end address of first part early setup
 
-; start mov kernel
-copy_kernel:
+; save current physical address
+push ebx
+; cal size of text to ecx
+mov ecx,_letext
+sub ecx,_lstext
+; cal base VMA of text section  to ebx
+
+add ebx,_lstext
+;  edx :  start of VNA of kernel space
+mov edx,_stext
+cp_text:
 cmp ecx,0
-je end_copy_kernel
+je ec_text
 mov  eax,[ebx]
 mov  [edx],eax
 inc edx
 inc ebx
 dec ecx
-jmp copy_kernel ; //this is relative jump
-end_copy_kernel:
+jmp cp_text
+ec_text:
+
+;copy data section
+; cal size of text to ecx
+mov ecx,_ledata
+sub ecx,_lsdata
+; cal base VMA of text section  to ebx
+mov ebx,[esp]
+add ebx,_lsdata
+mov edx,_sdata
+cp_data:
+cmp ecx,0
+je ec_data
+mov  eax,[ebx]
+mov  [edx],eax
+inc edx
+inc ebx
+dec ecx
+jmp cp_data
+ec_data:
+
+
+;setup stack 
+mov esp,0xC0F00000
+mov ebp,esp
 mov edx,0xC0800000
 jmp edx

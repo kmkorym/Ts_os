@@ -14,31 +14,30 @@
 #define MAX_MEM_SIZE (128*_1MB)
 
 
-/*
-#define KERNEL_MAX_END   0XB0000
-*/
-/*
-assume our kernel in 1 MB
-set up identity paging
-*/
+// the address for page dir,page table before enable page is physical but after enable page table
+// the address for them are virtual 
 
-
-
-//uint32_t  aaa  = 0x8787;
+#ifdef EARLY_INIT
 uint32_t  page_dir_addr =  PAGE_DIR_ADDR;                     
 uint32_t  *page_dir =    (uint32_t*)  PAGE_DIR_ADDR; // max 4KB 1024*4MB = 4G
 uint32_t  *page_table =  (uint32_t*) 0x101000; // start from 1MB+4KB
-
+#else
+uint32_t  page_dir_addr =  PAGE_DIR_ADDR + KERNEL_V_START;                     
+uint32_t  *page_dir =    (uint32_t*)  (PAGE_DIR_ADDR + KERNEL_V_START);     // max 4KB 1024*4MB = 4G
+uint32_t  *page_table =  (uint32_t*) (0x101000 + KERNEL_V_START); // start from 1MB+4KB
+#endif
 
 uint32_t get_phy_address(uint32_t va);
 int page_dirent_exists(uint32_t va);
 
+// use reverse mapping to get pade directory address
 uint32_t get_page_directory_pyhsical_address(){
     uint32_t * p = ( uint32_t *) 0xFFFFF000; 
     return (*p & 0xFFFFF000 );
 }
 
 
+#ifdef EARLY_INIT
 void test_page(){
     //print_hex(aaa);
     printl("");
@@ -69,6 +68,7 @@ void test_page(){
     //printl("page table address");
 
 }
+#endif
 
 uint32_t get_phy_address(uint32_t va){
     uint32_t dir_idx = PAGE_DIR_INDEX(va);
@@ -136,16 +136,15 @@ void allocate_page_tent(uint32_t va,uint32_t pa,uint8_t user){
     set_reverse_mapping(PAGE_DIR_INDEX(va),pt_base);
 }
 
+#ifdef EARLY_INIT
 void fill_zeros_page_dir(){
     uint32_t *p = page_dir;
-    while(p<page_table ){
+    while(p < (uint32_t *)KERNEL_P_START ){
         *p = 0 ;
         ++p ;
     }
-
-    //TODO: initlize 4MB page table to zeros!!
-
 }
+#endif
 
 
 void switch_page_dir(uint32_t dir_addr){
@@ -172,14 +171,15 @@ void enable_paging(){
     );
 }
 
+
 /*
     1.identity mapping first 1MB code (boot up code)
     2. 1MB ~ 8MB  is for page tables (kernel space) virtual address start from 3G
     3. 8MB ~ 16MB for kernel sections virtual address starts from 3G+8MB
     4. 16NB ~ MAX_MEM_SIZE for user  (user space so virtual address starts from 0)
 */
-
-// higher kernel setting settings
+// higher kernel setting settings before enable page table
+#ifdef EARLY_INIT
 void setup_page_tables(){
     fill_zeros_page_dir();
     uint32_t physical_address = 0;
@@ -190,13 +190,33 @@ void setup_page_tables(){
         physical_address+= FRAME_SIZE;
     }
     
+
+
+
     // 1MB ~ 8MB  is for page tables (kernel space) virtual address start from 3G
-    while( physical_address <  KERNEL_P_START ){
+    //first 1MB is for GDT  + setup code
+    while( physical_address <  KERNEL_P_START-_1MB ){
         // use identiy mapping first
         //allocate_page_tent(physical_address,physical_address,0);
         allocate_page_tent(physical_address+KERNEL_V_START,physical_address,0);
         physical_address+= FRAME_SIZE;
     }
+
+     //  because higher kernel needs gdt and some other data strcuture in boot sector
+    //  after patch table still needs a mapping to gdt so set first mapping in kernel space 
+    print_hex(physical_address+KERNEL_V_START);
+
+    int offset=0;
+    while( physical_address <  KERNEL_P_START){
+        // use identiy mapping first
+        //allocate_page_tent(physical_address,physical_address,0);
+        allocate_page_tent(physical_address+KERNEL_V_START,offset,0);
+        offset+=FRAME_SIZE;
+        physical_address+= FRAME_SIZE;
+    }
+
+
+
     
    // 8MB ~ 16MB for kernel sections virtual address starts from 3G+8MB
     while( physical_address < USER_P_START ){
@@ -205,32 +225,30 @@ void setup_page_tables(){
         allocate_page_tent(physical_address+KERNEL_V_START,physical_address,0);
         physical_address+= FRAME_SIZE;
     }
-    /*
-    //16MB ~ 128MB : user space
-    int user_v_addr=0;
-    while( physical_address < MAX_MEM_SIZE ){
-        // use identiy mapping first
-        //allocate_page_tent(physical_address,physical_address,0);
-        allocate_page_tent(user_v_addr,physical_address,1);
-        physical_address+= FRAME_SIZE;
-        user_v_addr+=FRAME_SIZE;
-    }
-    */
 
-
-    #ifdef EARLY_INIT
     extern int _init_end;  
     printl("init_end");
     print_hex((int)&_init_end);
-    #endif
-
-
 }
 
 void init_page_settings(){
     setup_page_tables();
     // set_reverse_mapping(1023, (uint32_t)page_dir );
     enable_paging();
+    
     test_page();
 }
+#else
+void   patch_page_table_k(){
+    int user_v_addr=0;
+    uint32_t physical_address =  USER_P_START;
+    // map first 1M 
+
+    while( physical_address < MAX_MEM_SIZE ){
+        allocate_page_tent(user_v_addr,physical_address,1);
+        physical_address+= FRAME_SIZE;
+        user_v_addr+=FRAME_SIZE;
+    }
+}
+#endif
 

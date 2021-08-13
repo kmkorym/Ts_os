@@ -12,7 +12,7 @@ debug:
 	qemu-system-i386 ${RUN_OPTIONS} -S -s &
 	gdb -ex 'target remote localhost:1234' \
 		-ex 'set architecture i386' \
-		-ex 'symbol-file build/kernel.sym'\
+                -ex 'symbol-file build/kernel.sym' \
 		-ex 'layout asm'\
 		-ex 'l'\
 

@@ -2,6 +2,7 @@
 int string_equal(const char*s1,const char*s2);
 void strcpy(const char*src,char*dst);
 void strncpy(char*src,char*dst,uint32_t n);
+void memcpy(char*src,char*dst,uint32_t n);
 char* strfd(const char*s,const char*pat);
 uint32_t strlen(const char*s);
 char* strtok(const char*s,const char*del,char *buffer);

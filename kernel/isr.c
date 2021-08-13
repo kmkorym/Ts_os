@@ -5,6 +5,12 @@
 #include "./common.h"
 
 #define IRQ_MAX 63
+#define PIC1		0x20		/* IO base address for master PIC */
+#define PIC2		0xA0		/* IO base address for slave PIC */
+#define PIC1_COMMAND	PIC1
+#define PIC1_DATA	(PIC1+1)
+#define PIC2_COMMAND	PIC2
+#define PIC2_DATA	(PIC2+1)
 
 
 void  init_devices(){
@@ -35,6 +41,23 @@ struct IDTDesc {
 extern struct idt_ptr_struct IDT_TABLE_DESC; // note  idt_ptr_struct*  is wrong
 struct IDTDesc idt[IRQ_MAX+1];
 
+
+
+
+
+void IRQ_set_mask(unsigned char IRQline) {
+    uint16_t port;
+    uint8_t value;
+ 
+    if(IRQline < 40) {
+        port = PIC1_DATA;
+    } else {
+        port = PIC2_DATA;
+        IRQline -= 32;
+    }
+    value = inb(port) | (1 << IRQline);
+    outb(port, value);        
+}
 
 void config_pic(){
     //remap interrupt
@@ -121,6 +144,7 @@ init_trap_gate((n),(uint32_t)isr##n,0x08);
 
 void init_idt(){
     config_pic();
+    //IRQ_set_mask(32);
     INIT_IRQ(0);
     INIT_IRQ(1);
     INIT_IRQ(2);

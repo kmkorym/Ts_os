@@ -83,23 +83,28 @@ void execute_task(){
         return ;
     }
 
-    struct simple_task current = simple_task_list[task_tail] ; 
     printstr("execute task");
-    print_hex(current.task_id);
+    print_hex(simple_task_list[task_tail].task_id);
     printl("");
     uint32_t old_esp = 0 ;
+    // can't set ebp in inline asm ...
     asm volatile ( 
-                    "pushal \n\t"
                     "movl %%esp,%0 \n\t"
                     "movl %1,%%esp \n\t"
-                    "movl %2,%%ebp \n\t"
-                    "movl %3,%%eax \n\t"
+                    "movl %2,%%eax \n\t"
+                    : "=&r" (old_esp)
+                    : "r"( simple_task_list[task_tail].esp),"r"( simple_task_list[task_tail].eip)
+                    : "eax","esp"
+    );
+
+    asm volatile ( 
+                    "movl %0,%%esp \n\t"
                     "call *%%eax \n\t"
-                    "popal"
-                    : "=r" (old_esp)
-                    : "r"(current.esp),"r" (current.ebp),"r"(current.eip)
+                    :
+                    : "r"( old_esp)
                     : "eax"
     );
+
     pop_task();
     printl("finish task");
 }
