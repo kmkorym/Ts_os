@@ -1,17 +1,7 @@
 #include "mem.h"
-#define _1MB  0x100000
-#define PAGE_DIR_INDEX(addr)(addr>>22)
-#define PAGE_TABLE_INDEX(addr)((addr>>12)&0x3FF)
-#define PAGE_OFFSET(addr)(addr&(~0xFFFFF000))
-#define PAGE_TABLE_START(dir_idx)((uint32_t)page_table+4096*dir_idx)
-#define PAGE_ALIGNED(addr)(addr% FRAME_SIZE == 0)
-#define PAGE_DIR_ADDR    (_1MB) 
-#define KERNEL_LOAD_ADDR 0x9030
-#define KERNEL_V_START   0xC0000000
-#define KERNEL_P_START  (8*_1MB)
-#define USER_P_START  (16*_1MB)
-#define KERNEL_VMAP_SIZE 0x800000
-#define MAX_MEM_SIZE (128*_1MB)
+#include "common.h"
+#include "frame.h"
+
 
 
 // the address for page dir,page table before enable page is physical but after enable page table
@@ -68,7 +58,70 @@ void test_page(){
     //printl("page table address");
 
 }
+#else 
+void test_mm(){
+    // access some memory of kernel heap  in the beginning of test and it will failed
+    // maybe need to modify page fault handler
+    // then call acquire frame  by those fail address
+
+    //  bitmap is for page in use and page table mapping is for is mapped
+    //  is it equal ?
+    // not the same semantic is more convenient !!!
+
+     // 1.  acuire frame for start address of heap
+     // 2.  access frame start by  pointer
+     // 3. remeber to fix page table of patch (to clean present bit in page directory of head address)
+    //  4. clean some  kheap va and reallocate 
+     // 5. accrss them and observe  frame address
+    //  6. show by reverse mapping and also test clean frame
+    //  7. may need to  disable page table setting for test (not manually)
+
+
+
+    //  *************
+    //   test method 2 : test for kmalloc and not for page table mapping
+    //  *************
+    //   bitmap is for page in use and all kernel space has mapping
+    //   kernel space setup code mark bitmap in used ... (but in what phase, early_setuo or  ??)
+    //   kmalloc --> free --> kmalloc 
+    //   print allocatd virtual memory to test
+    //     
+    //
+    //
+    //
+    //
+    //
+    //
+
+
+}
 #endif
+
+
+
+
+
+int get_frame_address(uint32_t va,uint32_t  *phy_addr){
+    
+    uint32_t dir_idx = PAGE_DIR_INDEX(va);
+    uint32_t pt_idx = PAGE_TABLE_INDEX(va);
+    uint32_t offset = PAGE_OFFSET(va);
+    uint32_t * pt = (uint32_t*) ( 0xFFC00000 + (dir_idx<<12) );
+
+    if( ! page_dirent_exists(va) ){
+        *phy_addr = 0;
+        return 0;
+    }
+
+    if  ( !(pt[dir_idx] &  PAGE_P) ){
+        *phy_addr = 0;
+        return 0;
+    }
+
+    *phy_addr = ( pt[pt_idx]&0xFFFFF000 ) + offset ;
+    return 1;
+}
+
 
 uint32_t get_phy_address(uint32_t va){
     uint32_t dir_idx = PAGE_DIR_INDEX(va);
@@ -251,4 +304,12 @@ void   patch_page_table_k(){
     }
 }
 #endif
+
+
+
+// frame allication
+
+
+
+
 

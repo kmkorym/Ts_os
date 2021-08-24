@@ -4,8 +4,11 @@ typedef unsigned char uint8_t ;
 
 #define EOF -1
 #define NULL 0
+#define _1MB  0x100000
+#define MAX_MEM_SIZE (128*_1MB)
 
-
+int first_set_bit(uint8_t* addr);
+int first_clr_bit(uint8_t* addr);
 void outb(uint16_t port, uint8_t value);
 uint8_t inb(uint16_t port);
 uint16_t inw(uint16_t port);

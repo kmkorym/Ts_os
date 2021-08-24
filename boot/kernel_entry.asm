@@ -16,7 +16,7 @@ mov ebx,0xC0709000
 mov [eax],ebx
 call  main
 after_main:
-
+jmp $
 
 ;tss_flush:
 ;mov ax, 0x2B     

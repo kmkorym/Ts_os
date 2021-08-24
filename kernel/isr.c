@@ -41,10 +41,6 @@ struct IDTDesc {
 extern struct idt_ptr_struct IDT_TABLE_DESC; // note  idt_ptr_struct*  is wrong
 struct IDTDesc idt[IRQ_MAX+1];
 
-
-
-
-
 void IRQ_set_mask(unsigned char IRQline) {
     uint16_t port;
     uint8_t value;
