@@ -111,6 +111,7 @@ uint32_t alloc_frame(uint32_t min_addr,uint32_t max_addr){
     }
     
     FRAME_BSET(bitmap,base);
+    //memzero((void*)base,FRAME_SIZE);
     return base;
 }
 
@@ -138,7 +139,7 @@ uint32_t get_idle_frame_addr(uint32_t min_addr,uint32_t max_addr){
     uint32_t  frame_addr = frame_idx*FRAME_SIZE;
 
     while(frame_addr<max_addr){
-        if(bitmap[frame_idx] != 0xFFFF){
+        if(bitmap[frame_idx/8] != 0xFF){
             int bit_offset = first_clr_bit(&bitmap[frame_idx/8]);
             frame_addr +=   bit_offset*FRAME_SIZE ;
             if(frame_addr+FRAME_SIZE > max_addr){
@@ -147,49 +148,8 @@ uint32_t get_idle_frame_addr(uint32_t min_addr,uint32_t max_addr){
             return frame_addr;
         }
         frame_addr+= 8 * FRAME_SIZE;
-        ++frame_idx;
+        frame_idx+=8;
     }
-
+    ASSERT(1==0,"no empty frame ...")
     return 0;
-}
-
-
-/*
-
- for heap
-
- */
-
-int  acquire_frame(uint32_t va,int is_user,uint32_t  *phy_addr){
-
-    uint32_t addr;
-
-    *phy_addr = 0 ;
-
-    // if frame address for va already exist, return it
-
-    if( get_frame_address(va,&addr) ){
-        *phy_addr = addr;
-        return 1;
-    }
-
-    // else allocate a frame address to va
-
-    if(is_user){
-        printl("heap for user not support now!");
-        return 0;
-    }else{
-        addr = alloc_frame(KERNEL_HEAP_START,KERNEL_HEAP_END);
-    }
-
-    if(!addr){
-        return 0;
-    }
-
-
-    *phy_addr = addr;
-    allocate_page_tent(va,addr,is_user);
-
-    return 1;
-
 }

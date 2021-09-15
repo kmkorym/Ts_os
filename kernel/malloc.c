@@ -88,12 +88,6 @@
 */
 
 
-#define ASSERT(cond,name)\
-    if(!(cond)){\
-        printl( #name " failed!" );\
-        printl( #cond " is False ") ;\
-    }\
-
 
 
 

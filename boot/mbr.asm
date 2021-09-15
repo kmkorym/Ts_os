@@ -1,14 +1,22 @@
+; bootloader 1
+; because real mode max addess is 1MB and real mode memory map > 0x80000 is for system usage
+; so kernel size can't bigger than 0.5 MB if want to use BIOS to load kernel in real mode
+; TODO to fix it to write a phase 2 bootloader in protected mode and use floppy/hdd driver
+; to read full kernel ...
+
 ;code section
 [bits 16]
 ; 
 LOADED_ADDRESS equ 0x9000
+LOADED_CYL1_NUM equ  25                   ;(0x80000-0x9000)/(0x4800)
+LOADED_CYL2_NUM equ  12                   ;(0x80000-0x9000)/(0x9000)
 [org 0x7c00]
 ;; just print something
-mov bx,HELLO_STRING
-call __printl
+;mov bx,HELLO_STRING
+;call __printl
 
-mov bx,HELLO_STRING
-call __printl
+;mov bx,HELLO_STRING
+;call __printl
 
 ;init seg registers
 mov bp, 0x8000 ; set the stack safely away from us
@@ -23,14 +31,37 @@ mov ds, bp
 mov bp, 0
 mov ss, bp
 
+call get_floppy_chs
 
+;after call get floopy, es ,di wil be modified so reset
+mov bp, 0
+mov es, bp
+mov di,0
 
 ;load 1024 byte to memery and print
 mov bx, LOADED_ADDRESS ; es:bx = 0x0000:0x9000 = 0x09000
-mov dh, 0x36 
-call disk_load
+mov cl,0
+
+; because memory  0x00080000 ~ 0x000FFFFFF is for BIOS , VGA .. 
+; and other system mapping so can't load kernel in that region
+mov ch,LOADED_CYL1_NUM
+mov al,[SECTOR_NUM]
+cmp al,0x12 
+je MB1_SEC
+mov ch,LOADED_CYL2_NUM
+MB1_SEC:
+call disk_load_all
+mov bx,HELLO_STRING
+call __printl
 ;mov bx, 0x9000+512; first word from second loaded sector, 0xface
-;jmp $
+; ----------------------------------------------------
+;mov dx,0
+;call disk_load
+
+
+;mov bx,HELLO_STRING
+;call __printl
+
 
 ;switch to protected mode
 cli;
@@ -81,14 +112,15 @@ __print_nl:
     ret
 
 
+
 %include "boot/disk.asm"
 
 
 ;data section
 HELLO_STRING:
 db "hello world",0
-MDFK_STRING2:
-db "MDFK2",0
+;MDFK_STRING2:
+;db "MDFK2",0
 
 GDT_TABLE_DESC:
     dw GDT_END-GDT_BASE-1 ; size of table
@@ -139,5 +171,3 @@ db 0x00 ; base
 GDT_END:
 # here is 0x9018
 START32:
-
-

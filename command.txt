@@ -1,0 +1,22 @@
+#### test bootloader #####
+make clean
+./scripts/bootloader.sh test 
+in gdb after disk_load_all
+kernel_dump 
+hexdump kdump.bin
+-->
+every 0x4800 address after 0x200
+0x0
+0x1 0x1 0x1
+0x2
+
+
+###### run and debug ######
+./run.sh run -fda build/kimage
+./run.sh run 
+./run.sh debug    -fda build/test_mbr.bin  -arch i8086 -gdb_opt 'set tdesc filename target.xml'
+		
+18432 --> 4800
+x/18432xb 0x9200
+x/18432xb 0xda00
+x/18432xb 0x12200

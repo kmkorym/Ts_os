@@ -1,0 +1,27 @@
+define break_points
+	b load_task_from_ram
+	b request_region_vmap
+	b switch_task
+end
+
+
+define display_regs
+
+end
+
+
+define display_regs2
+	display/x $al
+	display/x $ah
+	display/x $cl
+	display/x $ch
+	display/x $dl
+	display/x $dh
+	display/x $es
+	display/x $bx
+end
+
+
+define dump_kernel
+	dump binary memory kdump.bin 0x9000 0x100000
+end

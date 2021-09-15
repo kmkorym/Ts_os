@@ -9,14 +9,24 @@ _start:
 [extern user_loop]
 
 start_main:
+
+; save karg base address to karg_phy
+[extern karg_phy]
+add ebx,_ledata
+mov edx, karg_phy
+mov [edx],ebx
+
+
+
+
 mov eax,GDT_DESC2
 sgdt [eax]
 mov eax,GDT_DESC2+2
-mov ebx,0xC0709000
+mov ebx,0xC0009000
 mov [eax],ebx
 call  main
 after_main:
-jmp $
+
 
 ;tss_flush:
 ;mov ax, 0x2B     
@@ -213,9 +223,10 @@ inc ebx
 dec ecx
 jmp cp_data
 ec_data:
-
+;0x98c0
 
 ;setup stack 
+mov ebx,[esp]
 mov esp,0xC0F00000
 mov ebp,esp
 mov edx,0xC0800000

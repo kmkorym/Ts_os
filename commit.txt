@@ -1,0 +1,118 @@
+Multi-tasking
+
+Problem 1 : when allocate a new frame , how to assign it a virtual address ??
+¹w¯d¬Y¤@­Óaddress space for tempory mapping
+
+
+1023 PAGE DIR ENTRY is for reverse mapping page table
+1022 page entry is for tempory mapping ....
+
+
+
+Goal : create first task which address space is in 0-3G (user space)
+
+implementatio :
+	kernel code --> create task 0 --> task 0  (0-3G) address space + link kernel address space
+	task 0 can execute code with its own stack
+	because current we don't have any disk loader so task 0 ' code & data is in kernel image
+	althogh task 0 is in address 0 - 3G , it's in kernel mode, so it's like a thread and not a process ?? 
+
+
+task
+	- differnet address space
+	- different stack
+	- different heap???
+	- registers backup
+
+
+All in kernel mode:
+kernel init --> spawn 2 task
+
+add task, swtich task
+because no swap disk so current implemetation limit task to 8MB (or other suitable memory)
+kenel data and code link ...
+
+
+task 1 and task2 
+while(1){
+	print("I'm task 1 or task 2");
+	busy waiting for a while
+}
+
+in screen can show 2 message interleave ...
+
+
+
+first task will do something then spawn second task and third task
+           
+
+            _ _ _ _ task 1
+           |
+ task 0    +
+	   |_ _ _ _ task  2
+                       
+task 0 wait  for task 1 and task 2, when they terminated, task 0 can know and print a message
+
+task 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+Memory allocator: heap allocator + frame allocator
+
+Goal: 
+ - frame management
+	- bitmap
+ - kernel heap : 
+	- Linked list free/allocate region + header
+ - test case for both
+	
+1. frame management is for pyhiscal address page allocation while heap allocate virtual address
+2.  kernel heap allocation method as below:
+    
+    allocate header on each allocated/empty region
+    1. why need header on allocated/empty region : 
+	- allocated region --> because free must know how much size of address pass by user need to be freed, and also perform 
+                                merge (unification) on two consecutive freed region to a bigger one
+                                    - next region header can calculated by size + header size but previous adjacent header size need to be 
+                                      recorded as a filed of region header
+        - freed region --> because best match strategy and don't want to allocate big header array in advanced, must maintation a
+                           list of next pointer on each region
+
+    2.
+	struct region_header{
+		status --> 0 (free) / 1 (allocate)  
+                magic  -->   for debug
+                link  -->  when this region is free region, point header address to next bigger sized free region (to maintain a linked list of sorted size hole)
+                           when this region is allocated region, point header address to left adjacent region header
+	}     
+
+      
+    3. malloc : 
+	- find best match free region by iterate through header and perform some link list operation to adjust free region
+        - modify link of next region if it's allocated
+
+   4. free :
+        - free the region and then perform merge adjacent regions (left and right) by check the header content
+        - adjust free region list to match the change of merged regions
+                             
+Tests : 
+   only carry out adhoc test cases for both heap/frame allocation 
+   TODO : auto generated test case but how ??
+
+Next: 
+	multi-tasking ..
+
+others :
+ # Reverse mapping of physical address to virtaul address 
+ # Run user mode program loaded by UART in higher kerenl (later later later ....)
+ # Better page fault handler (later)

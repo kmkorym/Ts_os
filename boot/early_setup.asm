@@ -2,17 +2,17 @@
 ; this file is for early set up procedure before kernel entry
 ; process before kernel etry point is executed needs to do in this pbase
 ; for example setup page table for higher half kernel
-[extern  page_dir_addr]
-[extern  setup_page_tables]
+[extern  pg_dir0_phy ]
+[extern  init_pg_dir0_vmap]
 
 global _start_early_init:
 _start_early_init:
 
 cli
-call setup_page_tables
+call  init_pg_dir0_vmap
 
 ; enable page
- mov ebx, page_dir_addr
+ mov ebx, pg_dir0_phy
  mov  eax,[ebx]
  mov cr3, eax
  mov eax, cr0

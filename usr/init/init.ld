@@ -1,36 +1,36 @@
 OUTPUT_FORMAT(elf32-i386)
-ENTRY(_start)
 SECTIONS
 {
-   . = 0;
-   .kernel_setup :{
-        /* all code in kernel setup must be position independant*/
-        *(.kernel_setup)
+    OVERLAY : {
+	    .hd  {
+        SHORT(0x1234)
+        SHORT(0xABCD)
+        LONG(LOADADDR(.text))
+		    LONG(ADDR(.text))
+		    LONG(SIZEOF(.text))
+        LONG(LOADADDR(.data))
+		    LONG(ADDR(.data))
+		    LONG(SIZEOF(.data))
+	    }
+	    .text  {
+	     *(.text);
+	     *(.rodata);
+	   }
     }
-     _kernel_setup_end = . ;
 
-    . = 0xC0800000;
-    _kernel_start =  . ;
-    
-    _stext = ADDR(.text) ;
-    .text :  AT ( _kernel_setup_end) {
-     *(.text);
-     *(.rodata);
-   }
-   _etext = . ;
-   _lstext =  LOADADDR(.text);
-   _letext =  LOADADDR(.text)+SIZEOF(.text);
-
-    _sdata = ADDR(.data) ;
-   .data : AT(LOADADDR(.text)+SIZEOF(.text)){
+   .data ALIGN(4096) :  AT(LOADADDR(.text)+SIZEOF(.text)) {
     *(.data);
     *(.bss);
-    SHORT(0x5566);
    }
-   
-    _edata = . ;
-   _lsdata =  LOADADDR(.data);
-   _ledata = LOADADDR(.data)+SIZEOF(.data);
+  
+  /DISCARD/ : {
+
+    *(.note.gnu.property);
+
+  }
+
+
+
 
 /* Stabs debugging sections.  */
   .stab          0 : { *(.stab) }

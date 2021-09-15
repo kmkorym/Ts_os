@@ -1,20 +1,13 @@
-CFLAGS = -m32 -ffreestanding  -g -fno-asynchronous-unwind-tables
+CFLAGS = -m32 -ffreestanding  -g -fno-asynchronous-unwind-tables -fno-pie
 HEADERS = $(wildcard kernel/*.h  drivers/*.h lib/*.h)
 C_SOURCES = $(wildcard kernel/*.c drivers/*.c lib/*.c)
-OBJS = ${C_SOURCES:.c=.o}
-RUN_OPTIONS = -boot order=a -fda build/kimage -chardev pipe,id=sp0,path=/home/uabharuhi/Desktop/com1  -serial chardev:sp0  -D ./qlog.txt
+OBJS = $(C_SOURCES:.c=.o)
+#BUILD_OBJS = $(addprefix build/,$(notdir $(C_SOURCES:.c=.o)))
 
-
-run: 
-	qemu-system-i386  ${RUN_OPTIONS}
-
-debug: 
-	qemu-system-i386 ${RUN_OPTIONS} -S -s &
-	gdb -ex 'target remote localhost:1234' \
-		-ex 'set architecture i386' \
-                -ex 'symbol-file build/kernel.sym' \
-		-ex 'layout asm'\
-		-ex 'l'\
+build_test_mbr: boot.bin
+	mv boot.bin  build
+	./scripts/bootloader.sh  build -f build/boot.bin  -o  build/test_mbr.bin
+	
 
 deploy: kimage boot.bin early_setup.bin early_setup.elf  kernel.bin   kernel/init_mem.o early_setup.o kernel_entry.o  kernel.elf kernel.sym early_setup.sym  ${OBJS}
 	mv   $^  build/
@@ -25,9 +18,12 @@ deploy: kimage boot.bin early_setup.bin early_setup.elf  kernel.bin   kernel/ini
 build: kimage
 
 
-kimage: boot.bin early_setup.bin kernel.bin  kernel.sym early_setup.sym 
-	cat boot.bin  early_setup.bin  kernel.bin > kimage
+kimage: boot.bin early_setup.bin kernel.bin task0.bin kernel.sym early_setup.sym 
+	cat boot.bin  early_setup.bin  kernel.bin  usr/init/task0.bin  > kimage
 	truncate -s 1M kimage
+
+task0.bin :
+	make -C usr/init/
 
 kernel.bin: kernel.elf
 	objcopy kernel.elf -O binary kernel.bin
@@ -44,7 +40,7 @@ early_setup.bin: early_setup.elf
 early_setup.sym: early_setup.elf
 	objcopy --only-keep-debug   early_setup.elf   early_setup.sym
 
-early_setup.elf: early_setup.o  kernel/init_mem.o lib/print.o
+early_setup.elf: early_setup.o  kernel/init_mem.o  lib/print.o
 	ld -m elf_i386 -nostdlib  -T esetup.ld  $^ -o $@
 
 kernel/init_mem.o:
@@ -59,5 +55,8 @@ early_setup.o:
 boot.bin:
 	nasm  -f bin boot/mbr.asm  -o boot.bin 
 
+
 clean:
-	rm  build/* 
+	rm -f build/*  boot.bin early_setup.bin lib/*.o  *.elf  kernel/*.o  drivers/*.o early_setup.o  
+	make -C usr/init/ clean
+

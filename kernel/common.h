@@ -7,6 +7,14 @@ typedef unsigned char uint8_t ;
 #define _1MB  0x100000
 #define MAX_MEM_SIZE (128*_1MB)
 
+#define ASSERT(cond,name)\
+    if(!(cond)){\
+        printl( #name " failed!" );\
+        printl( #cond " is False ") ;\
+        while(1){}\
+    }\
+
+
 int first_set_bit(uint8_t* addr);
 int first_clr_bit(uint8_t* addr);
 void outb(uint16_t port, uint8_t value);

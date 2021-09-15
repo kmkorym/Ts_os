@@ -8,11 +8,14 @@
 int main(){
     clear();
     printl("kernel main start");
+    re_init_pg_dir0();
+    test_page();
     //setup_tss();
     init_idt();
     init_devices();
-    patch_page_table_k();
     init_heap();
     test_heap();
+    extern uint32_t* pg_dir0;
+    start_task0(pg_dir0);
     return 0;
 }

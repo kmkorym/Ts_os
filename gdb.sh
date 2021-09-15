@@ -1,1 +1,10 @@
-make debug
+#!/bin/bash
+
+
+
+
+
+
+
+
+#make debug
