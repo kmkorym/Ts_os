@@ -1,5 +1,5 @@
 ; bootloader 1
-; because real mode max addess is 1MB and real mode memory map > 0x80000 is for system usage
+; because real mode max address is 1MB and real mode memory map > 0x80000 is for system usage
 ; so kernel size can't bigger than 0.5 MB if want to use BIOS to load kernel in real mode
 ; TODO to fix it to write a phase 2 bootloader in protected mode and use floppy/hdd driver
 ; to read full kernel ...
@@ -33,7 +33,7 @@ mov ss, bp
 
 call get_floppy_chs
 
-;after call get floopy, es ,di wil be modified so reset
+;after call get flopy, es ,di wil be modified so reset
 mov bp, 0
 mov es, bp
 mov di,0

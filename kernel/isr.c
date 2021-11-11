@@ -3,6 +3,8 @@
 #include "../drivers/keyboard.h"
 #include "../drivers/com.h"
 #include "./common.h"
+#include "./task.h"
+#include "./sys.h"
 
 #define IRQ_MAX 63
 #define PIC1		0x20		/* IO base address for master PIC */
@@ -113,8 +115,11 @@ void  irq_handler_entry( uint32_t irq, uint32_t err_code){
         case 36:
             com1_handler();
             break;
+        case 63:
+            terminate_process();
+            break;
     }
-
+    // EOI
     if (irq >= 40){
          outb(0xA0, 0x20);
     }
@@ -205,8 +210,17 @@ void init_idt(){
     INIT_IRQ(60);
     INIT_IRQ(61);
     INIT_IRQ(62);
-    INIT_IRQ(63); 
+    INIT_IRQ(63);
+    //idt[63].type_attr = 0xEE; ; // user privelge level for system call
     IDT_TABLE_DESC.limit = sizeof(struct IDTDesc)*( IRQ_MAX+1)-1;
     IDT_TABLE_DESC.base =  (uint32_t)&idt;
     return;
+}
+
+
+
+void* syscall_table[SYSCALL_NUM]={0};
+void init_syscall(){
+    syscall_table[SYS_EXIT]=terminate_process;
+    syscall_table[SYS_PRINTL]=printl;
 }

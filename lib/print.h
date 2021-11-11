@@ -12,4 +12,5 @@ void print_hex(int);
 void clear();
 void print_screen(char c,unsigned int x,unsigned int y);
 void back_char();
+void print_byte(unsigned char x);
 #endif

@@ -354,12 +354,14 @@ uint32_t*  alloc_page(uint32_t start_phy,uint32_t end_phy,uint32_t* phy){
 
 
 void re_init_pg_dir0(){
+    /*
     uint32_t physical_address = 0;
     // clear indentiy mapping
     while( physical_address <  _1MB  ){
         pg_dir0[PAGE_DIR_INDEX(physical_address)] = 0 ;
         physical_address+=FRAME_SIZE;
     }
+    */
 }
 
 

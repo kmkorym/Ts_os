@@ -5,7 +5,7 @@ arch='i386'
 layout=src
 fda=build/kimage
 sym=build/kernel.sym 
-common_run_opts="-boot order=a"
+common_run_opts="-boot order=a -global ide-hd.logical_block_size=512  -global ide-hd.physical_block_size=512  -drive file=hd.img,if=ide,index=0,format=raw"
 gdb_file='gdb.txt'
 tdesc='l' # l = no op
 
@@ -61,6 +61,7 @@ case "$action" in
     run)
         make build
         make deploy
+        #qemu-system-i386  $common_run_opts 
         qemu-system-i386  $common_run_opts -drive file=$fda,index=0,if=floppy,format=raw 
         shift;;
     debug)

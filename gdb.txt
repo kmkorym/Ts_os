@@ -1,14 +1,38 @@
+define lsb1
+	symbol-file build/early_setup.sym 
+end
+
+define peflags
+	info registers eflags
+end
+
 define break_points
-	b load_task_from_ram
-	b request_region_vmap
+	b parse_kargs
 	b switch_task
 end
 
-
-define display_regs
-
+define display_current
+	display/x current
+	display/x *current
 end
 
+
+
+define display_regs
+	display/x $esp
+	display/x $ebp
+end
+
+
+
+define display_ar
+	display/x $eax
+	display/x $ebx
+	display/x $ecx
+	display/x $edx
+	display/x $esp
+	display/x $ebp
+end
 
 define display_regs2
 	display/x $al

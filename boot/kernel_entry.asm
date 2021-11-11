@@ -3,6 +3,7 @@ section .text
 _start:
 [bits 32]
 [extern main]
+[extern parse_kargs]
 [extern test_call]
 [extern  init_page_settings]
 [extern irq_handler_entry]
@@ -24,17 +25,25 @@ sgdt [eax]
 mov eax,GDT_DESC2+2
 mov ebx,0xC0009000
 mov [eax],ebx
-call  main
-after_main:
-
-
-;tss_flush:
-;mov ax, 0x2B     
-;ltr ax  
 mov eax,GDT_DESC2
 lgdt [eax]
+
+
+call  main
+
 mov eax,IDT_TABLE_DESC
 lidt [eax]
+sti
+call parse_kargs
+
+jmp $
+;tss_flush:
+;mov ax, 0x2B     
+;ltr ax 
+
+
+
+
 
 ; must init user space page tables ...
 ;call init_page_settings
@@ -48,8 +57,7 @@ lidt [eax]
 ;_ULOOP:
 ;call user_loop
 
-sti
-jmp $
+
 
 ;call user_loop
 
@@ -65,6 +73,9 @@ IDT_TABLE_DESC:
     dw 0
     dd 0
 
+
+
+[extern cond_schedule]
 %macro ISR_NOERRCODE 1  ; define a macro, taking one parameter
   [GLOBAL isr%1]        ; %1 accesses the first parameter.
   isr%1:
@@ -75,6 +86,7 @@ IDT_TABLE_DESC:
     call irq_handler_entry
     add esp, 8
     popa
+    call cond_schedule
     sti
     iret   
 %endmacro
@@ -96,7 +108,6 @@ IDT_TABLE_DESC:
     sti
     iret
 %endmacro
-
 
 ISR_NOERRCODE 0
 ISR_NOERRCODE 1
@@ -169,7 +180,22 @@ ISR_NOERRCODE 59
 ISR_NOERRCODE 60
 ISR_NOERRCODE 61
 ISR_NOERRCODE 62
-ISR_NOERRCODE 63
+[extern syscall_table]
+GLOBAL isr63
+isr63:
+  cli
+  push edx
+  push ecx
+  push ebx
+  push eax
+  mov edi,eax
+  shl edi,2
+  add edi,syscall_table
+  add esp,4
+  call [edi]
+  add esp,12
+  sti
+iret
 
 
 

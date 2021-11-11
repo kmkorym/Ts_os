@@ -1,17 +1,26 @@
 #include "../lib/print.h"
 #include "../kernel/common.h"
+#include "../kernel/task.h"
 
-#define TIMER_FREQUENCY 40
+#define TIMER_FREQUENCY 25
 
 uint32_t secs=0;
 uint32_t freq_counter=0;
+extern struct Task *current;
 
 void timer_handler(){
     freq_counter+=1;
     if(freq_counter>=TIMER_FREQUENCY){
         secs+=1;
         freq_counter=0; 
+        //printl("timer is here");
+
     }
+    current->ttl-=1;
+    if(!current->ttl){
+        current->state |= TASK_NEED_SCHED;
+    }
+    
 }
 
 

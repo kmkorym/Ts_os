@@ -54,8 +54,6 @@ void parse_serial_command(char* s){
             print_char(' ');
             ++p;
         }
-
-
     }
     
 }
@@ -72,6 +70,10 @@ void  parse_command(char*s){
         halt();
     }else if(string_equal("clear",s)){
         clear();
+    }else if(string_equal("nt",s)){
+        printl("switch to next task");
+        extern struct Task *current;
+        current->state|=TASK_NEED_SCHED;
     }else{
         // parse command
         p = s;

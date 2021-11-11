@@ -5,6 +5,8 @@
 #include "common.h"
 #include "../lib/print.h"
 #define MAX_TASK_NUM 32
+#define TASK_PRESENT 0x1
+#define TASK_NEED_SCHED 0x2
 /*
 Multi-tasking
 
@@ -41,7 +43,6 @@ struct TsExHeader{
    uint32_t   vma_data;
    uint32_t   data_size;
 }__attribute__((packed));
-
 
 
 
@@ -113,19 +114,28 @@ struct simple_task
 };
 
 
+#define TASK_ALLOCATED 1
 
 struct Task{
    // field of registers
-   uint32_t tid;
-   uint32_t state;
-   uint32_t phy_dir;
    uint32_t esp0;
    uint32_t eip;
-   struct ContextRegister regs;
-};
+   uint32_t phy_dir;
+   uint32_t ebp0;
+   uint32_t ptid;   
+   uint32_t tid;
+   uint32_t state;   /* 0: unallocated */
+   uint32_t ttl;
+   // struct ContextRegister regs;
+}__attribute__((packed));
 
 
 
+uint32_t next_task_pos(uint32_t header_addr);
+uint32_t get_next_tid();
+void schedule();
+void cond_schedule();
+void init_task0();
 void start_task0(uint32_t* kernel_dir);
 void execute_task();
 void setup_tss();
@@ -135,5 +145,6 @@ void pop_task();
 void add_task( struct simple_task task);
 void switch_to_user(uint32_t new_eip);
 void switch_task(struct Task *task);
-
+struct Task * load_task(uint32_t* parent_dir,uint32_t task_hd_addr);
+int terminate_process();
 #endif
