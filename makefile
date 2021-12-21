@@ -1,6 +1,6 @@
 CFLAGS = -m32 -ffreestanding  -g -fno-asynchronous-unwind-tables -fno-pie
-HEADERS = $(wildcard kernel/*.h  drivers/*.h lib/*.h)
-C_SOURCES = $(wildcard kernel/*.c drivers/*.c lib/*.c)
+HEADERS = $(wildcard kernel/*.h  drivers/*.h lib/*.h fs/*.h)
+C_SOURCES = $(wildcard kernel/*.c drivers/*.c lib/*.c fs/*.c)
 OBJS = $(C_SOURCES:.c=.o)
 #BUILD_OBJS = $(addprefix build/,$(notdir $(C_SOURCES:.c=.o)))
 

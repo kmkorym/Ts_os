@@ -6,6 +6,7 @@ void __move_cursor_next();
 void __move_cursor_next_line();
 void set_cursor(unsigned int x,unsigned int y);
 void print_char(char c);
+void print_chars(char * s,int n);
 void printstr(char * s);
 void printl(char * s);
 void print_hex(int);

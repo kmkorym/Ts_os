@@ -12,6 +12,14 @@ void panic(char*s){
 }
 
 
+int max(int a,int b){
+    return a>b?a:b;
+}
+
+int min(int a,int b){
+    return a<b?a:b;
+}
+
 
 void outw(uint16_t port, uint16_t value)
 {

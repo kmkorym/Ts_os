@@ -14,7 +14,8 @@ typedef unsigned char uint8_t ;
         while(1){}\
     }\
 
-
+int max(int a,int b);
+int min(int a,int b);
 int first_set_bit(uint8_t* addr);
 int first_clr_bit(uint8_t* addr);
 void outb(uint16_t port, uint8_t value);

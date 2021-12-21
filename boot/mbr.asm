@@ -169,5 +169,4 @@ db 0x00   ; access byte
 db 0x00     ; flag G=1 D=1
 db 0x00 ; base
 GDT_END:
-# here is 0x9018
 START32:

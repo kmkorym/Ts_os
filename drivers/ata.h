@@ -1,3 +1,6 @@
+#ifndef _ATA_
+#define _ATA_
+
 #include "../kernel/common.h"
 
 #define ATA_DATA       0x00
@@ -73,3 +76,5 @@ void ata_poll(uint32_t bus,uint32_t dev_nb);
 uint8_t ata_poll_bsy(struct IDE_Device *device);
 uint8_t ata_poll_bsy_drq(struct IDE_Device *device,int set_drq);
 void ata_soft_reset(IDE_Device *device);
+
+#endif

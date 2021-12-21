@@ -88,6 +88,13 @@ void print_char(char c){
     show_prompt();
 }
 
+void print_chars(char * s,int n){
+    int i;
+    for(i=0;i<n;++i){
+       print_char(s[i]); 
+    }
+}
+
 
 void printstr(char * s){
     while(*s){

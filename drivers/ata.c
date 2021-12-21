@@ -125,7 +125,7 @@ int ata_write_buffer(struct IDE_Device *device,uint8_t *buf,uint32_t cnt){
     uint32_t port = ATA_PR_MST_IO_BASE+ATA_DATA;
     for(i=0;i<cnt;i+=2){
         ata_poll_bsy_drq(device,1);
-        outw(port,(uint16_t)buf[i]+((uint16_t)buf[i+1]>>8));
+        outw(port,(uint16_t)buf[i]+((uint16_t)buf[i+1]<<8));
     }
     return cnt;
 }
@@ -241,6 +241,16 @@ uint32_t ata_read_sector(Disk_IO_Command *command){
     uint32_t sec_num = command->sec_num;
     uint32_t lba_start = command->lba_start;
     IDE_Device *device = command->device;
+
+    if( command->buf_size/512 < sec_num ){
+        sec_num = command->buf_size/512;
+    }
+
+    if(!sec_num){
+        printl("ata: read_sector ->F 0 sectors");
+        return 0;
+    }
+
     outb(ATA_PR_MST_IO_BASE+ATA_HDDEVSEL,0xE0|is_slave<<4|(uint8_t)(lba_start>>24 & 0x0F));
     ata_poll_bsy_drq(device,0);
     ata_poll_drdy(device);
@@ -256,8 +266,10 @@ uint32_t ata_read_sector(Disk_IO_Command *command){
         if(i>0){
             ata_poll_bsy_drq(device,1);
         }
-        ata_read_buffer(&ide_device,command->buf,512);
+        ata_read_buffer(&ide_device,&command->buf[512*i],512);
     }
+
+    return sec_num;
 }
 
 
@@ -296,4 +308,7 @@ uint32_t ata_write_sector(Disk_IO_Command *command){
     outb(ATA_PR_MST_IO_BASE+ATA_COMMAND,0xE7);
     ata_wait(0,0);
     ata_poll_bsy_drq(command->device,0);
+
+
+    return command->sec_num;
 }

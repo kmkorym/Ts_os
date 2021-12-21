@@ -1,0 +1,53 @@
+###############
+File system
+##############
+
+Goal: implement a file system
+ - simple to implement, avoid complication
+ - hard disk drive
+ - support open/read/write/ls/cd , subdirectory
+ - can verify (using linux command tool linke fsck mkfs mount)
+ 
+ 
+- first step  : generate fat16 file system by linux command and check it's correct by hexdump and fsck.fat 
+                and mount it in linux create a file  
+- second step : read super block / get parameter and read the file create in linux 
+
+
+TODO
+1. Multitasking , driver polling must  disable interrupt --> implement wait queue
+2. VFS ,  file stream ...
+3. support both upper / lower case of filename ??  support extension ??  
+- create filename conflict
+4. test for expand file larget than a cluster
+5. test for > fat table > cluster bytes
+6. delete file
+7. support for byte offset , supoort . / ..  read/write, especially the special case /dir/.. , not support /. and /.. now
+8. test for directory > 1000 files
+9. support auto resize directory when create/delete 
+10. handle the case of create file directory when parent don't exist.. 
+
+
+
+problems
+
+1. How to handle root directory ??
+
+
+BUG1
+
+FAT16 directory created by linux , if .. point to root directrory , its start cluster is 0
+and create new file will overwrite this entry , kernel dmesg will show corrupted directory entry (some confusing)
+
+
+
+https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system
+
+
+File size in bytes. Entries with the Volume Label or Subdirectory flag set should have a size of 0.
+Subdirectory. (Since MS-DOS 1.40 and PC DOS 2.0) Indicates that the cluster-chain associated with this entry gets interpreted as subdirectory instead of as a file. Subdirectories have a filesize entry of zero.
+
+http://elm-chan.org/docs/fat_e.html
+http://www.maverick-os.dk/FileSystemFormats/FAT16_FileSystem.html#SmallNumberOfSectors
+https://wiki.osdev.org/FAT
+https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system#BPB

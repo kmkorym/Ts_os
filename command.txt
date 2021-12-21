@@ -20,3 +20,325 @@ every 0x4800 address after 0x200
 x/18432xb 0x9200
 x/18432xb 0xda00
 x/18432xb 0x12200
+
+
+
+############### create fat 16 disk ###########
+
+./scripts/image.sh   gen    -s 20M -n fat16.img  -m fat16
+./scripts/image.sh   mnt -n fat16.img  -m /home/uabharuhi/Desktop/fat16
+./scripts/image.sh   umnt -n fat16.img -m ./fat16 ;
+./scripts/image.sh   reload -n fat16.img  -m fat16
+
+./scripts/image.sh   gen    -s 20M -n ../fat16.img  -m ../fat16
+./scripts/image.sh   mnt -n fat16.img -m ../fat16 ;
+./scripts/image.sh   umnt -n fat16.img -m ../fat16 ;
+./scripts/image.sh   reload -n fat16.img  -m ../fat16 
+
+./scripts/image.sh   umnt -n fat16.img  -m fat16 ; rm fat16.img
+./scripts/image.sh   gen    -s 20M -n fat16.img  -m fat16
+cd fat16 ; echo 1234 > 1234.txt ; mkdir usr ;
+
+make build;  make deploy ;  ./run.sh debug
+
+# restart
+./scripts/image.sh   umnt -n fat16.img -m ../fat16  &&  ./scripts/image.sh   gen    -s 20M -n ../fat16.img  -m ../fat16 &&  make clean &&   make deploy &&  ./run.sh debug -hd ../fat16.img
+
+./scripts/image.sh   umnt -n fat16.img -m fat16  &&  ./scripts/image.sh   gen    -s 20M -n fat16.img  -m fat16 &&  make clean &&   make deploy &&  ./run.sh debug 
+
+
+# check
+cd share ; ./scripts/image.sh   umnt -n fat16.img -m ../fat16  && ./scripts/image.sh   mnt -n ../fat16.img -m ../fat16  &&   cd ../fat16 ;
+
+ ./scripts/image.sh   umnt -n fat16.img -m fat16  && ./scripts/image.sh   mnt -n fat16.img -m fat16  &&   cd fat16 ;
+
+#### GDB ##############
+cond 3 ((unsigned int)s-0xc0efd888)%256==0 
+
+
+p *(arr)@512
+
+
+
+p *(((FatDirEntry*)buf))@4
+p *(((FatDirEntry*)buf)+12)@4
+
+p *(((FatDirEntry*)buf)+12)@4
+
+
+p *(((FatDirEntry*)buf)+15)
+
+
+p ((char*)dirent - buf)/sizeof(FatDirEntry)
+
+
+配置目標
+
+# 自動補全
+  - lsp built in completion is trash, must use plugin
+  - 函數signature 補全
+  - rename
+     * 遇到問題 rename過後無法gd gr --> 需要wa write all bufffers to file ...
+     * 如何關閉 variable refernce list 
+      這個叫做quick fix window --> 用ccl關閉
+    * snippest 無法auto complete
+       - 必須安裝 friendly-snippets default的snippets is trash
+    
+    
+# 變量 函數 跳轉
+  - 顯示函數定義 (?)
+  
+# error/warning highlight 
+ - lsp 內建error message太長顯示不完全 , 先不解決 改使用 trouble 套件顯示
+# syntax highlight
+  - select text by syntax
+  
+# file browser / fuzzy search
+  - history file/ recent file
+  - tab manager  barbar.nvim
+
+  
+# taglist support (optional)
+
+# bookmark
+
+# session save
+
+# theme
+
+# indention /  quote completion
+
+# Hop
+  :HopWord
+
+# Quick fix for gcc
+# lspsaga.nvim
+
+# code formamting / snippest
+
+
+# vim-matchup
+
+#lspsaga.nvim
+
+#symbols-outline.nvim
+  :SymbolsOutline
+
+string completion ?? --> use surround
+
+
+
+#lspsaga.nvim
+color scheme: ocean
+
+#galaxyline.nvim
+#surround
+ saw"" [motion]
+#packer
+
+accelarate jk nvim
+
+
+#find function name or sysmbol by fzf
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### test bootloader #####
+make clean
+./scripts/bootloader.sh test 
+in gdb after disk_load_all
+kernel_dump 
+hexdump kdump.bin
+-->
+every 0x4800 address after 0x200
+0x0
+0x1 0x1 0x1
+0x2
+
+
+###### run and debug ######
+./run.sh run -fda build/kimage
+./run.sh run 
+./run.sh debug    -fda build/test_mbr.bin  -arch i8086 -gdb_opt 'set tdesc filename target.xml'
+		
+18432 --> 4800
+x/18432xb 0x9200
+x/18432xb 0xda00
+x/18432xb 0x12200
+
+
+
+############### create fat 16 disk ###########
+
+./scripts/image.sh   gen    -s 20M -n fat16.img  -m fat16
+./scripts/image.sh   mnt -n fat16.img  -m /home/uabharuhi/Desktop/fat16
+./scripts/image.sh   umnt -n fat16.img -m ./fat16 ;
+./scripts/image.sh   reload -n fat16.img  -m fat16
+
+./scripts/image.sh   gen    -s 20M -n ../fat16.img  -m ../fat16
+./scripts/image.sh   mnt -n fat16.img -m ../fat16 ;
+./scripts/image.sh   umnt -n fat16.img -m ../fat16 ;
+./scripts/image.sh   reload -n fat16.img  -m ../fat16 
+
+./scripts/image.sh   umnt -n fat16.img  -m fat16 ; rm fat16.img
+./scripts/image.sh   gen    -s 20M -n fat16.img  -m fat16
+cd fat16 ; echo 1234 > 1234.txt ; mkdir usr ;
+
+make build;  make deploy ;  ./run.sh debug
+
+# restart
+./scripts/image.sh   umnt -n fat16.img -m ../fat16  &&  ./scripts/image.sh   gen    -s 20M -n ../fat16.img  -m ../fat16 &&  make clean &&   make deploy &&  ./run.sh debug -hd ../fat16.img
+
+./scripts/image.sh   umnt -n fat16.img -m fat16  &&  ./scripts/image.sh   gen    -s 20M -n fat16.img  -m fat16 &&  make clean &&   make deploy &&  ./run.sh debug 
+
+
+# check
+cd share ; ./scripts/image.sh   umnt -n fat16.img -m ../fat16  && ./scripts/image.sh   mnt -n ../fat16.img -m ../fat16  &&   cd ../fat16 ;
+
+ ./scripts/image.sh   umnt -n fat16.img -m fat16  && ./scripts/image.sh   mnt -n fat16.img -m fat16  &&   cd fat16 ;
+
+#### GDB ##############
+cond 3 ((unsigned int)s-0xc0efd888)%256==0 
+
+
+p *(arr)@512
+
+
+
+p *(((FatDirEntry*)buf))@4
+p *(((FatDirEntry*)buf)+12)@4
+
+p *(((FatDirEntry*)buf)+12)@4
+
+
+p *(((FatDirEntry*)buf)+15)
+
+
+p ((char*)dirent - buf)/sizeof(FatDirEntry)
+
+
+配置目標
+
+# 自動補全
+  - lsp built in completion is trash, must use plugin
+  - 函數signature 補全
+  - rename
+     * 遇到問題 rename過後無法gd gr --> 需要wa write all bufffers to file ...
+     * 如何關閉 variable refernce list 
+      這個叫做quick fix window --> 用ccl關閉
+    * snippest 無法auto complete
+       - 必須安裝 friendly-snippets default的snippets is trash
+    
+    
+# 變量 函數 跳轉
+  - 顯示函數定義 (?)
+  
+# error/warning highlight 
+ - lsp 內建error message太長顯示不完全 , 先不解決 改使用 trouble 套件顯示
+# syntax highlight
+  - select text by syntax
+  
+# file browser / fuzzy search
+  - history file/ recent file
+  - tab manager  barbar.nvim
+
+  
+# taglist support (optional)
+
+# bookmark
+
+# session save
+
+# theme
+
+# indention /  quote completion
+
+# Hop
+  :HopWord
+
+# Quick fix for gcc
+# lspsaga.nvim
+
+# code formamting / snippest
+
+
+# vim-matchup
+
+#lspsaga.nvim
+
+#symbols-outline.nvim
+  :SymbolsOutline
+
+string completion ?? --> use surround
+
+
+
+#lspsaga.nvim
+color scheme: ocean
+
+#galaxyline.nvim
+#surround
+ saw"" [motion]
+#packer
+
+accelarate jk nvim
+
+
+## file browser
+
+###   zsh set up  ###
+
+- THEME powerlevel10k
+    - Setup default config by wizard
+    - edit ~/.p10k.zsh 
+       - left prompt context 
+       WARNING !  Context segment must  delete a line to be shown
+    - PURE theme must set up palatte from terminal preference setting
+
+- fzf
+  - Keybindings for CTRL+T , ALT+C , CTRL+r must source to .zshrc
+    use this command to check 
+    dpkg -L fzf | grep bindings
+
+- zsh-autosuggestion
+
+- syntax-highlight
+
+-z plugin for cd rapidly
+
+    
+
+###  zshrc  ####
+
+alias ls="ls --color=auto"
+source /home/user/zsh-plugin/zsh-z.plugin.zsh
+source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+source   /home/user/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
+autoload -U compinit && compinit
+
+PATH=$PATH:~/powerlevel10k
+
+source ~/powerlevel10k/powerlevel10k.zsh-theme
+
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+source /usr/share/doc/fzf/examples/key-bindings.zsh
+.
+
+
+sfsaf
+
+
