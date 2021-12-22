@@ -222,6 +222,9 @@ uint32_t atoi(const char*s,uint8_t base){
     return sum;
 }
 
+int is_num(char c){
+    return c>='0' && c<='9' ? 1:0;
+}
 
 int is_alpha(char c){
     if( (c>='A' && c <='Z')|| (c>='a' && c<='z')){

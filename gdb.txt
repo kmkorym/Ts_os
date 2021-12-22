@@ -9,7 +9,8 @@ end
 define break_points
 	b test_fat_delete
 	b test_fat_stress_create 
-	b test_fat_stress_delete 
+	b test_fat_stress_delete
+    b test_printf
 end
 
 define display_current

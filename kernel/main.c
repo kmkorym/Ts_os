@@ -81,8 +81,7 @@ void test_fat16_find(Fat16Volume* volume){
     _test_fat16_find(volume,"/usr/abcd");
     _test_fat16_find(volume,"/usr/");
     char *name = "/usr/8787";
-    Fat16File *file =  fat16_find(volume,name);
-    ASSERT(!file,"not such file: /usr/8787");
+    ASSERT(!fat_open(volume,"/usr/8787",0),"not such file: /usr/8787");
 }
 
 void test_fat16_read(Fat16Volume* volume){
@@ -324,6 +323,19 @@ void parse_kargs(){
 }
 
 
+void test_printf(){
+    char *s1="1234\n";
+    printf("%d",1);
+    printf("[%d]\n");
+    printf("%s",s1);
+    printf("%s %d %c%c\n","1234",5,'g','d');
+
+    printf("%05x %x %02x %3x %5x %08x\n",0x5,0x5,0x123,0x1234,0x12342234,0x12345);
+    printf("%x %0x %0x %0x\n",0,0x123,0,3);
+
+    printf("%05d %d %02d %3d %5d %08d\n",5,5,123,1234,12342234,12345);
+    printf("%d %0d %0d %0d\n",0,123,0,3);
+}
 
 
 int main(){
@@ -332,10 +344,10 @@ int main(){
     re_init_pg_dir0();
     test_page();
     init_heap();
-  
-    test_ata_driver();
+    test_printf();
+    //test_ata_driver();
 
-    test_fat16();
+    //test_fat16();
     
     while(1){}
     //setup_tss();

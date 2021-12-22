@@ -16,3 +16,4 @@ int str_pad(char *s,char value,int size);
 void memset(char *buf,char value,int size);
 void strcat(char *s1,char *s2,char *buf);
 int itoa(int a,char *buf,int buf_size);
+int is_num(char c);

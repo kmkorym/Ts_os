@@ -42,7 +42,7 @@ early_setup.bin: early_setup.elf
 early_setup.sym: early_setup.elf
 	objcopy --only-keep-debug   early_setup.elf   early_setup.sym
 
-early_setup.elf: early_setup.o  kernel/init_mem.o  lib/init_print.o
+early_setup.elf: early_setup.o  kernel/init_mem.o  lib/init_print.o lib/string.o
 	ld -m elf_i386 -nostdlib  -T esetup.ld  $^ -o $@
 
 kernel/init_mem.o:

@@ -5,7 +5,7 @@ arch='i386'
 layout=src
 fda=build/kimage
 sym=build/kernel.sym 
-disk_image_name=fat16.img
+disk_image_name=''
 common_run_opts="-boot order=a -global ide-hd.logical_block_size=512  -global ide-hd.physical_block_size=512"
 gdb_file='gdb.txt'
 tdesc='l' # l = no op
@@ -63,8 +63,14 @@ if [ $arch = 'i8086' ];then
     layout=asm
 fi
 
-if [ $do_img_backup -eq 1 ] ;then
+if [ $do_img_backup -eq 1 ]  && [ "$disk_image_name" != ""  ];then
     cp -f $disk_image_name $disk_image_name.bak
+fi
+
+if [ "$disk_image_name" != ""  ];then
+    disk_param="-drive file=$disk_image_name,if=ide,index=0,format=raw" 
+else
+    disk_param=""
 fi
 
 
@@ -73,10 +79,10 @@ case "$action" in
         make build
         make deploy
         #qemu-system-i386  $common_run_opts 
-        qemu-system-i386  $common_run_opts -drive file=$disk_image_name,if=ide,index=0,format=raw -drive file=$fda,index=0,if=floppy,format=raw 
+        qemu-system-i386  $common_run_opts $disk_param   -drive file=$fda,index=0,if=floppy,format=raw 
         shift;;
     debug)
-        qemu-system-i386 $common_run_opts  -drive file=$disk_image_name,if=ide,index=0,format=raw   -drive file=$fda,index=0,if=floppy,format=raw    -S -s  &
+        qemu-system-i386 $common_run_opts  $disk_param   -drive file=$fda,index=0,if=floppy,format=raw    -S -s  &
         sleep 1
         gdb -ex 'target remote localhost:1234' -x $gdb_file  -ex "$tdesc"  -ex "set architecture $arch" -ex  "symbol-file $sym" \
         -ex 'break_points'  -ex 'p_vars' -ex "layout $layout"
