@@ -31,7 +31,7 @@ SECTIONS
     _edata = . ;
    _lsdata =  LOADADDR(.data);
    _ledata = LOADADDR(.data)+SIZEOF(.data);
-
+   _heap_start = ALIGN(4);
 /* Stabs debugging sections.  */
   .stab          0 : { *(.stab) }
   .stabstr       0 : { *(.stabstr) }

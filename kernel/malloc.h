@@ -3,7 +3,8 @@
 #include "../lib/print.h"
 
 
-#define HEAP_END  KERNEL_V_START+(16*_1MB)
+#define HEAP_START KERNEL_V_START+(12*_1MB)
+#define HEAP_END   KERNEL_V_START+(16*_1MB)
 #define REGION_FREE  0
 #define REGION_ALLOC 1
 

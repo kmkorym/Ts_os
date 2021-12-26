@@ -31,7 +31,6 @@
 #define USER_P_START  (16*_1MB)
 #define USER_V_STACK  (0xC0000000-4)
 
-#define KERNEL_HEAP_START  0xC0F00000
 #define KERNEL_HEAP_END    0xC1000000
 #define PRINT_ADDR(addr)\
     print_hex((int)addr);\

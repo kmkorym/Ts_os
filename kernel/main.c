@@ -344,20 +344,19 @@ int main(){
     re_init_pg_dir0();
     test_page();
     init_heap();
-    test_printf();
+    //test_printf();
     //test_ata_driver();
 
     //test_fat16();
     
-    while(1){}
-    //setup_tss();
-    /*
+    setup_tss();
+    
     init_idt();
     init_devices();
-    test_heap();
-    init_task0();
-    init_syscall();
-    */
+    //while(1){};
+   // test_heap();
+    //init_task0();
+    //init_syscall();
     //parse_kargs();
     //printl("return parse kargs");
     //while(1){};
