@@ -73,15 +73,15 @@ char *history;
 uint32_t history_cnt = 0;
 
 char *window ;
+uint32_t max_window_size       = 0 ;
 uint32_t window_first_history  = 0 ;
-uint32_t window_last_history   = 0 ;
-uint32_t window_last_offset    = 0 ;
-uint32_t cursor_index          = 0 ;
-uint32_t tracker_start     
+uint32_t window_last_history   = 0 ; // this is open interval, represent "next coming history number"
+uint32_t window_size    = 0 ;
+
 //uint32_t view_row_num = 0;
 // view_size ...
 
-char *   input_buffer;
+//char *   input_buffer;
 uint32_t input_area_lines = 1 ;
 uint32_t prompt_x = 0 ;
 uint32_t status_bar_lines = 1 ;
@@ -91,248 +91,212 @@ uint32_t status_bar_lines = 1 ;
 void init_console(){
 
     const VGA_PARAM* vga = vga_init();
+
     console_max_col = vga->max_col;
     console_max_row = vga->max_row;
-
+    
     history = (char*) malloc(CONSOLE_HISTORY_SIZE);
     memzero(history,CONSOLE_HISTORY_SIZE);
 
-    view    = (char*) malloc(vga->max_col*(console_max_row-input_area_lines-status_bar_lines));
-    view_row_num = console_max_row-input_area_lines-status_bar_lines;
+    window    = (char*) malloc(vga->max_col*(console_max_row-input_area_lines-status_bar_lines));
+    max_window_size = (console_max_col-input_area_lines-status_bar_lines)*console_max_row ;
     
-    input_buffer = (char*) malloc(MAX_INPUT_LINES*vga->max_col);
-    memzero(input_buffer,MAX_INPUT_LINES*vga->max_col);
-    
-
+    //input_buffer = (char*) malloc(MAX_INPUT_LINES*vga->max_col);
+    //memzero(input_buffer,MAX_INPUT_LINES*vga->max_col);
 }
 
+/*
+static inline char * get_history_by_offset(uint32_t offset){
+    return & history[offset%CONSOLE_HISTORY_SIZE];
+}
 static inline char * get_view_row(uint32_t row){
     return view+ (row*console_max_col);
 }
 
+*/
 
 static inline uint32_t get_history_min(){
     return history_cnt > CONSOLE_HISTORY_SIZE? history_cnt - CONSOLE_HISTORY_SIZE :0 ;
 }
 
-static inline char * get_history_by_offset(uint32_t offset){
-    return & history[offset%CONSOLE_HISTORY_SIZE];
-}
-
-void flush_view_buffer(){
-
-    uint32_t vga_start_row  = input_area_lines;
-    uint32_t vga_bottom_row = console_max_row - 1 - status_bar_lines;
-    uint32_t cnt = 0;
-
-    while( vga_bottom_row >= vga_start_row ){
-        vga_print_row(vga_bottom_row-cnt,get_view_row(view_row_num-1-cnt));
-        --vga_bottom_row ; 
-        ++cnt;
-    }  
-
-}
-
-// ofset must be end  of a history line for max_console_col condition
-uint32_t line_start_history_byte(uint32_t offset){
+uint32_t line_start_history(uint32_t line_end_offset){
     
+    uint32_t offset = line_end_offset;
     uint32_t histroy_min =  get_history_min();
-    uint32_t cnt = console_max_col - 1;
-
+    uint32_t cnt = 1;
 
     if( histroy_min >= offset ){
         return histroy_min;
     }
 
-
-    while( offset > histroy_min   &&  cnt   &&
-           '\n' != *get_history_by_offset(offset)   ){
+    while( offset > histroy_min   &&  cnt < console_max_col  &&
+           '\n' != history[ offset % CONSOLE_HISTORY_SIZE ]   ){
            -- offset;  
-           --cnt ; 
+           ++cnt ; 
     }
 
     return offset;
 }
 
-// ofset must be start of a history line for max_console_col condition
-uint32_t line_end_history_byte(uint32_t offset){
+
+uint32_t line_end_history(uint32_t line_start_offset){
     
-    uint32_t cnt = console_max_col - 1;
+    uint32_t offset = line_start_offset;
+    uint32_t cnt = 1;
     
     if( offset >= history_cnt - 1 ){
         return offset;
     }
 
-    while( offset < history_cnt - 1  &&  cnt  &&
-           '\n' !=  *get_history_by_offset(offset) ){
+    while(  offset < history_cnt - 1  &&  cnt < console_max_col  &&
+            '\n' !=  history[ offset % CONSOLE_HISTORY_SIZE ] ){
             ++offset;
-            --cnt;
+            ++cnt;
     }
     
     return offset;
 }
 
 
-void  generate_view_row(uint32_t y,uint32_t start_offset,uint32_t end_offset){ 
-    
-    char * p;
-    int i ;
-    int new_line = 0; 
-    
-    p = get_view_row(y);
+void draw_window(){
 
-    if( *get_history_by_offset(i+end_offset) == '\n'){
-        new_line = 1;
+    uint32_t vga_row    = input_area_lines;
+    uint32_t window_row = 0;
+
+    while( vga_row  < console_max_col - status_bar_lines ){
+        vga_print_row(vga_row,window+console_max_col*window_row);
+        ++window_row;
+        ++vga_row;
     }
 
-    if(new_line){
-        for(i=0;i<console_max_col;++i){ 
-            if( start_offset+i <= end_offset && p[i]!='\n' ){
-                p[i] = *get_history_by_offset(i+start_offset) ; 
-            }else{
-                p[i] = 0;    
-            }
-        }
-    }else{
-        for(i=console_max_col-1;i>=0;--i){
-            if( end_offset>=start_offset ){
-                if(p[i]!='\n'){
-                    p[i] = *get_history_by_offset(end_offset) ; 
-                }else{
-                    p[i] = 0;
-                }
-                --end_offset;
-            }else{
-                p[i] = 0;
-            }
-        }
-    }
 }
 
-uint32_t generate_view_from_bottom(uint32_t start_x , uint32_t start_y , uint32_t start_offset){
-    
-    uint32_t start_line = start_offset - start_x;
-    uint32_t end_line   = start_offset ;
-    uint32_t view_byte_cnt = 0;
-
-    if( start_line < get_history_min() || start_offset >= history_cnt ){
-        return;
-    }
-
-    uint32_t row_cnt = start_y + 1;
-    uint32_t n;
-
-    while(row_cnt){
-        n = end_line - start_line +1;
-        break;
-        generate_view_row(row_cnt-1,start_line,start_line+n-1);
-        end_line   = start_line-1;
-        start_line = line_start_history_byte(end_line);
-        view_byte_cnt+=n;
-        --row_cnt;
-    }
-
-    return view_byte_cnt;
-
-}
 
 /*
-    TODO: optimize these two function
+    TODO: optimize this function
 */
 
-void lift_console_view(){
+void update_window_buffer(){
 
-    if(!view_first_byte){
-        return ;
+    uint32_t size = 0 ;
+    uint32_t history_index = window_first_history; 
+
+    while( size < max_window_size && history_index <= history_cnt -1 ){
+        window[size] = history[ history_index % CONSOLE_HISTORY_SIZE];     
+        ++size;
+        ++history_index; 
+        if( window[size-1] == '\n'){
+            while( size % console_max_col && size < max_window_size){
+                window[size] = 0;
+                ++size;
+            }
+        }  
     }
 
-    int i ;
-    uint32_t  start_0;
+    window_size         = size;
+    window_last_history = history_index;
 
-    start_0 = line_start_history_byte(view_first_byte-1);
-
-    if( start_0 == view_first_byte){
-        return;
+    // filling remain unused position 0
+    while( size < max_window_size){
+        window[size++] = 0;
     }
+
+}
+
+
+int  move_down_window_start_position(){
     
-    for( i = view_row_num-2; i >= 0 ; --i){
-        memcpy(get_view_row(i),get_view_row(i+1),console_max_col);
+    uint32_t line_end = line_end_history(window_first_history);
+    
+    if( line_end+1 >= history_cnt  ){
+        return -1;
     }
 
-    generate_view_row(0,start_0,view_first_byte-1);
-    view_first_byte = start_0;
-   
+    window_first_history = line_end+1;
+
+    return 0;
 }
 
-void down_console_view(){
+int  move_up_window_start_position(){
+    
+    uint32_t new_start;
 
-    uint32_t next_view_end = line_end_history_byte(view_last_byte+1);
-    int i ;
-
-    for(i=1;i<view_row_num-1;++i){
-        memcpy(get_view_row(i),get_view_row(i-1),console_max_col);
+    if( ! window_first_history){
+        return -1;
     }
 
-    if( next_view_end == view_last_byte){
-        memset(get_view_row(view_row_num-1),0,console_max_col);
+    new_start = line_end_history(window_first_history-1);
+
+    if(new_start >= window_first_history){
+        return -1;
+    }
+
+    window_first_history = new_start;
+
+
+    return 0;
+}
+
+void window_move_up(){
+
+    if( move_up_window_start_position() < 0 ){
         return;
     }
 
-    generate_view_row(view_row_num-1,view_last_byte+1,next_view_end);
-    view_last_byte = next_view_end;
-
+    update_window_buffer();
+    draw_window();
 }
 
 
-// put input to buffer
-// check need to adjust view port to follow current line
-//      if need : generate view buffer from history and adjust view XX variable
-//      if not  : just print the character
-//      backspace only support for input area, printf not working
+
+void window_move_down(){
+
+    if( move_down_window_start_position() < 0 ){
+        return;
+    }
+
+    update_window_buffer();
+    draw_window();
+}
+
+
+/*
+    1. put new coming character into buffer
+    2. check need to update window.last.offset
+    3. check whether to update winodw.start.history
+*/
+
 void write_console_one(char c){
 
-    char * p = get_history_by_offset(history_cnt);
-    int follow_cur_flag = (history_cnt-1 == view_last_byte ? 1:0);
-    uint32_t view_cnt ;
+    int follow_current = 0;
 
-    *p = c ; 
-    ++history_cnt;
-    ++cursor_x;
+    history[ (history_cnt++) % CONSOLE_HISTORY_SIZE ] = c;
 
-    view_last_byte = history_cnt - 1;
-
-    if(!follow_cur_flag){
-        view_cnt  = generate_view_from_bottom(cursor_x-1,view_row_num-1,cursor_x-1);
-        view_first_byte = view_last_byte-view_cnt+1;
-    }
-        
-    switch(c){
-        case '\n':
-            cursor_x = 0;
-            down_console_view();
-            break;
-        default:
-            cursor_x = cursor_x % console_max_col;
-            break;
-    }
-
-    if(!follow_cur_flag){
-        flush_view_buffer();
+    if( history_cnt == window_size+1 ){  // window is following the latest output
+        window_size++;
+        follow_current = 1;    
     }else{
-        vga_write_char(c,cursor_x-1,console_max_row - 1 - status_bar_lines);
+        window_first_history = history_cnt-1;
+        window_size = 1 ;
     }
 
-}
-
-void  input_console_one(char c){
+    window_last_history = history_cnt;
     
-    switch(c){
-        case '\n':
-
-
-
+    if( window_size > max_window_size ){   
+        move_down_window_start_position();
     }
 
-    ++prompt_x;
-}
+    if(follow_current){
+        switch(c){
+            case '\n':
+                window_size = window_size + console_max_col - 1 +  (window_size+console_max_col-1) % console_max_col;
+                break;
+            default:
+                vga_write_char( c, (window_size-1) % console_max_col , (window_size-1)/console_max_col );
+        }
+    }else{
+        update_window_buffer();
+        draw_window();
+    }
 
+}
