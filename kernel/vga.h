@@ -5,6 +5,8 @@
 #define VGA_BASE  0XB8000+KERNEL_V_START
 #endif
 
+#include "common.h"
+
 #define VGA_MAX_COL 80
 #define VGA_MAX_ROW 25
 

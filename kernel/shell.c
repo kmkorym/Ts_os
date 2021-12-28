@@ -84,14 +84,3 @@ void  parse_command(char*s){
     }
 
 }
-
-
-
-
-
-
-
-void parse_serial_port_cmd(){
-
-
-}

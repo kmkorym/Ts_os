@@ -3,12 +3,6 @@
  * and bss section is in data section so using kmalloc for screen buffer
  */
 
-#include "../kernel/vga.h"
-#include "console.h"
-#include "malloc.h"
-#include "../lib/print.h"
-#include "../lib/string.h"
-#include "common.h"
 
 /*
     console:
@@ -64,15 +58,28 @@
 
 */
 
+#include "vga.h"
+#include "console.h"
+#include "../lib/print.h"
+#include "../lib/string.h"
+#include "common.h"
+
 
 uint32_t console_max_col = 0 ;
 uint32_t console_max_row  = 0 ;
 uint32_t cosole_ctl_flag = 0;
 
+#ifdef EARLY_INIT
+char history[CONSOLE_HISTORY_SIZE];
+char window[VGA_MAX_COL*VGA_MAX_ROW];
+#else
+#include "malloc.h"
 char *history;
+char *window ;
+#endif
 uint32_t history_cnt = 0;
 
-char *window ;
+
 uint32_t max_window_size       = 0 ;
 uint32_t window_first_history  = 0 ;
 uint32_t window_last_history   = 0 ; // this is open interval, represent "next coming history number"
@@ -91,15 +98,18 @@ uint32_t status_bar_lines = 1 ;
 void init_console(){
 
     const VGA_PARAM* vga = vga_init();
-
+    
     console_max_col = vga->max_col;
     console_max_row = vga->max_row;
-    
-    history = (char*) malloc(CONSOLE_HISTORY_SIZE);
-    memzero(history,CONSOLE_HISTORY_SIZE);
 
-    window    = (char*) malloc(vga->max_col*(console_max_row-input_area_lines-status_bar_lines));
-    max_window_size = (console_max_col-input_area_lines-status_bar_lines)*console_max_row ;
+    #ifndef EARLY_INIT
+        history = (char*) malloc(CONSOLE_HISTORY_SIZE);
+        memzero(history,CONSOLE_HISTORY_SIZE);
+        window    = (char*) malloc(vga->max_col*(console_max_row-input_area_lines-status_bar_lines));
+        max_window_size = (console_max_col-input_area_lines-status_bar_lines)*console_max_row ;
+    #endif
+
+
     
     //input_buffer = (char*) malloc(MAX_INPUT_LINES*vga->max_col);
     //memzero(input_buffer,MAX_INPUT_LINES*vga->max_col);
@@ -305,5 +315,19 @@ void write_console_one(char c){
         update_window_buffer();
         draw_window();
     }
+
+}
+
+
+/*
+    current behavior : after clear the output window
+    it will follow the latest output
+*/
+
+void clear(){
+
+    window_first_history = window_first_history = history_cnt ;
+    update_window_buffer();
+    draw_window();
 
 }

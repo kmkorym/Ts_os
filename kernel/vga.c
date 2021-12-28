@@ -3,7 +3,6 @@
 static VGA_PARAM vga_param;
 
 
-
 /*
     TODO : init vga parameter by probe BIOS/hardware setting 
 */
@@ -14,7 +13,7 @@ const VGA_PARAM*  vga_init(){
 }
 
 
-unsigned int  _vga_addr(unsigned int x,unsigned int y){
+unsigned int  __vga_addr(unsigned int x,unsigned int y){
     return  VGA_BASE+(y * vga_param.max_col + x) * 2;
 }
 
