@@ -121,16 +121,16 @@ static inline uint32_t get_history_min(){
 
 uint32_t line_start_history(uint32_t line_end_offset){
     
-    uint32_t offset = line_end_offset;
-    uint32_t histroy_min =  get_history_min();
-    uint32_t cnt = 1;
+    uint32_t offset      = line_end_offset ;
+    uint32_t histroy_min = get_history_min() ;
+    uint32_t cnt         = 1 ;
 
     if( histroy_min >= offset ){
-        return histroy_min;
+        return histroy_min ;
     }
 
     while( offset > histroy_min   &&  cnt < console_max_col  &&
-           '\n' != history[ offset % CONSOLE_HISTORY_SIZE ]   ){
+           '\n' != history[ (offset-1) % CONSOLE_HISTORY_SIZE ]   ){
            -- offset;  
            ++cnt ; 
     }
@@ -138,13 +138,18 @@ uint32_t line_start_history(uint32_t line_end_offset){
     return offset;
 }
 
+// this end is close interval
 
 uint32_t line_end_history(uint32_t line_start_offset){
     
     uint32_t offset = line_start_offset;
     uint32_t cnt = 1;
     
-    if( offset >= history_cnt - 1 ){
+    if(! history_cnt ){
+        return 0;
+    }
+
+    if( offset >= history_cnt-1 ){
         return offset;
     }
 
@@ -181,10 +186,12 @@ void update_window_buffer(){
     uint32_t size = 0 ;
     uint32_t history_index = window_first_history; 
 
-    while( size < max_window_size && history_index <= history_cnt -1 ){
+    while( size < max_window_size && history_index < history_cnt  ){
+        
         window[size] = history[ history_index % CONSOLE_HISTORY_SIZE];     
         ++size;
-        ++history_index; 
+        ++history_index;
+
         if( window[size-1] == '\n'){
             while( size % console_max_col && size < max_window_size){
                 window[size] = 0;
@@ -221,11 +228,11 @@ int  move_up_window_start_position(){
     
     uint32_t new_start;
 
-    if( ! window_first_history){
+    if( ! window_first_history ){
         return -1;
     }
 
-    new_start = line_end_history(window_first_history-1);
+    new_start = line_start_history(window_first_history-1);
 
     if(new_start >= window_first_history){
         return -1;
