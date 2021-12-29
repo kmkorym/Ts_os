@@ -339,21 +339,21 @@ void test_printf(){
 
 
 int main(){
-    clear();
-    printl("kernel main start");
+    //clear();
+    //printl("kernel main start");
     re_init_pg_dir0();
-    test_page();
+    //test_page();
     init_heap();
-    //test_printf();
+    test_printf();
     //test_ata_driver();
 
     //test_fat16();
     
     setup_tss();
     
-    init_idt();
-    init_devices();
-    //while(1){};
+    //init_idt();
+    //init_devices();
+    while(1){};
    // test_heap();
     //init_task0();
     //init_syscall();

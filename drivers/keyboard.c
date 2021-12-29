@@ -73,16 +73,18 @@ void kb_handler(){
     if(keycode >SC_MAX){
         return;
     }else if(keycode ==  LEFT_SHIFT){
+        
         if(shift_pressed){
             shift_pressed = 0 ;
-            print_screen(0,79,0);
+            //print_screen(0,79,0);
         }else{
             shift_pressed = 1;
-            print_screen('I',79,0);
+           // print_screen('I',79,0);
         }
+        
     }else if(keycode ==  BACKSPACE){
         pop_buffer();
-        back_char();
+       // back_char();
     }else if(keycode ==  ENTER){
         print_char('\n');
         parse_command(kb_buffer);

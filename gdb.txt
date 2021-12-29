@@ -1,5 +1,13 @@
 define lsb1
 	symbol-file build/early_setup.sym 
+	layout asm
+end
+
+
+define p_console_vars
+	display window_size 
+	display window_first_history
+	display window_last_history
 end
 
 define peflags

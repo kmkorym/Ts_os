@@ -61,6 +61,7 @@ parse_args "$@"
 
 if [ $arch = 'i8086' ];then
     layout=asm
+    tdesc='set tdesc filename target.xml'
 fi
 
 if [ $do_img_backup -eq 1 ]  && [ "$disk_image_name" != ""  ];then
@@ -92,6 +93,8 @@ case "$action" in
         echo "unknown action : $action !"
         exit;;
 esac
+
+#set tdesc filename path
 
 # https://stackoverflow.com/questions/32955887/how-to-disassemble-16-bit-x86-boot-sector-code-in-gdb-with-x-i-pc-it-gets-tr
 # https://sourceware.org/bugzilla/show_bug.cgi?id=22869

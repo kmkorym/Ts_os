@@ -92,7 +92,7 @@ uint32_t window_size    = 0 ;
 uint32_t input_area_lines = 1 ;
 uint32_t prompt_x = 0 ;
 uint32_t status_bar_lines = 1 ;
-
+uint8_t  console_init_flag = 0;
 
 
 void init_console(){
@@ -103,14 +103,13 @@ void init_console(){
     console_max_row = vga->max_row;
 
     #ifndef EARLY_INIT
-        history = (char*) malloc(CONSOLE_HISTORY_SIZE);
+        history = (char*) kmalloc(CONSOLE_HISTORY_SIZE);
         memzero(history,CONSOLE_HISTORY_SIZE);
-        window    = (char*) malloc(vga->max_col*(console_max_row-input_area_lines-status_bar_lines));
+        window    = (char*) kmalloc(vga->max_col*(console_max_row-input_area_lines-status_bar_lines));
         max_window_size = (console_max_col-input_area_lines-status_bar_lines)*console_max_row ;
     #endif
 
-
-    
+    console_init_flag = 1;
     //input_buffer = (char*) malloc(MAX_INPUT_LINES*vga->max_col);
     //memzero(input_buffer,MAX_INPUT_LINES*vga->max_col);
 }
@@ -286,6 +285,13 @@ void window_move_down(){
 void write_console_one(char c){
 
     int follow_current = 0;
+    
+    if(!console_init_flag){
+        init_console();
+    }
+
+
+
 
     history[ (history_cnt++) % CONSOLE_HISTORY_SIZE ] = c;
 
@@ -326,6 +332,10 @@ void write_console_one(char c){
 
 void clear(){
 
+    if(!console_init_flag){
+        init_console();
+    }
+    
     window_first_history = window_first_history = history_cnt ;
     update_window_buffer();
     draw_window();
