@@ -1,9 +1,7 @@
-#include "../lib/print.h"
-#include "../lib/string.h"
-#include "../kernel/common.h"
-#include "../drivers/com.h"
+#include "../drivers/keyboard.h"
 
-void halt();
+void  halt();
 void  parse_command(char*s);
-void parse_serial_port_cmd();
+void  parse_serial_port_cmd();
 void  parse_command(char*s);
+void shell_get_key_code(KEY_CODE keycode);

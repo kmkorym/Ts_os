@@ -1,4 +1,5 @@
 #include "../lib/print.h"
+#include "vga.h"
 #include "../lib/string.h"
 #include "common.h"
 #include "isr.h"
@@ -7,6 +8,7 @@
 #include "frame.h"
 #include "malloc.h"
 #include "sys.h"
+#include "console.h"
 #include "../drivers/ata.h"
 #include "../fs/fat16.h"
 
@@ -323,41 +325,83 @@ void parse_kargs(){
 }
 
 
-void test_printf(){
+
+void test_printf1(){
     char *s1="1234\n";
-    printf("%d",1);
-    printf("[%d]\n");
+    printstr("1234");
+    printstr("5678\n");
+}
+
+void test_printf2(){
+
+    char *s1="12345678\n";
+
     printf("%s",s1);
     printf("%s %d %c%c\n","1234",5,'g','d');
-
+    printstr("9012 22334\n");
+    printstr("3456\n");
+    printstr("7890\n");
+    printstr("\n");
     printf("%05x %x %02x %3x %5x %08x\n",0x5,0x5,0x123,0x1234,0x12342234,0x12345);
     printf("%x %0x %0x %0x\n",0,0x123,0,3);
-
     printf("%05d %d %02d %3d %5d %08d\n",5,5,123,1234,12342234,12345);
     printf("%d %0d %0d %0d\n",0,123,0,3);
+    printstr("7890\n");
+    /*
+    printf("%d",1);
+    printf("[%d]\n",2);
+    printf("%s",s1);
+    printf("%s %d %c%c\n","1234",5,'g','d');
+    printf("%05x %x %02x %3x %5x %08x\n",0x5,0x5,0x123,0x1234,0x12342234,0x12345);
+    printf("%x %0x %0x %0x\n",0,0x123,0,3);
+    printf("%05d %d %02d %3d %5d %08d\n",5,5,123,1234,12342234,12345);
+    printf("%d %0d %0d %0d\n",0,123,0,3);
+    */
+    /*
+    printf("%d",1);
+    printf("[%d]\n",2);
+    printf("%s",s1);
+    printf("%s %d %c%c\n","1234",5,'g','d');
+    printf("%05x %x %02x %3x %5x %08x\n",0x5,0x5,0x123,0x1234,0x12342234,0x12345);
+    printf("%x %0x %0x %0x\n",0,0x123,0,3);
+    printf("%05d %d %02d %3d %5d %08d\n",5,5,123,1234,12342234,12345);
+    printf("%d %0d %0d %0d\n",0,123,0,3);
+
+    printf("%d",1);
+    printf("[%d]\n",2);
+    printf("%s",s1);
+    printf("%s %d %c%c\n","1234",5,'g','d');
+    printf("%05x %x %02x %3x %5x %08x\n",0x5,0x5,0x123,0x1234,0x12342234,0x12345);
+    printf("%x %0x %0x %0x\n",0,0x123,0,3);
+    printf("%05d %d %02d %3d %5d %08d\n",5,5,123,1234,12342234,12345);
+    printf("%d %0d %0d %0d\n",0,123,0,3);
+    */
+
 }
 
 
 int main(){
-    clear();
-    printl("kernel main start");
+    //clear();
+    //printl("kernel main start");
     re_init_pg_dir0();
-    test_page();
     init_heap();
-    test_printf();
+    init_console();
+    vga_clear_all();
+    //test_page();
+    
+    test_printf1();
+    test_printf2();
     //test_ata_driver();
 
     //test_fat16();
     
-    while(1){}
-    //setup_tss();
-    /*
+    setup_tss();
+    
     init_idt();
     init_devices();
-    test_heap();
-    init_task0();
-    init_syscall();
-    */
+   // test_heap();
+    //init_task0();
+    //init_syscall();
     //parse_kargs();
     //printl("return parse kargs");
     //while(1){};

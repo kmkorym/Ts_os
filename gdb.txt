@@ -1,17 +1,35 @@
+
+define debug_script
+	lsb_main
+	p_console_vars
+end
+
+define break_points
+	b flush_input_buffer
+end
+
 define lsb1
 	symbol-file build/early_setup.sym 
+	layout asm
+end
+
+define lsb_main
+	symbol-file build/kernel.sym 
+	layout asm
+end
+
+define p_console_vars
+	display window_size 
+	display window_first_history
+	display window_last_history
+	display history_cnt
 end
 
 define peflags
 	info registers eflags
 end
 
-define break_points
-	b test_fat_delete
-	b test_fat_stress_create 
-	b test_fat_stress_delete
-    b test_printf
-end
+
 
 define display_current
 	display/x current

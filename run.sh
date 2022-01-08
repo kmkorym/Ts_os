@@ -61,6 +61,7 @@ parse_args "$@"
 
 if [ $arch = 'i8086' ];then
     layout=asm
+    tdesc='set tdesc filename target.xml'
 fi
 
 if [ $do_img_backup -eq 1 ]  && [ "$disk_image_name" != ""  ];then
@@ -85,13 +86,15 @@ case "$action" in
         qemu-system-i386 $common_run_opts  $disk_param   -drive file=$fda,index=0,if=floppy,format=raw    -S -s  &
         sleep 1
         gdb -ex 'target remote localhost:1234' -x $gdb_file  -ex "$tdesc"  -ex "set architecture $arch" -ex  "symbol-file $sym" \
-        -ex 'break_points'  -ex 'p_vars' -ex "layout $layout"
+        -ex 'break_points'  -ex 'p_vars' -ex "layout $layout" -ex "debug_script"
         exit
         ;;
     *)
         echo "unknown action : $action !"
         exit;;
 esac
+
+#set tdesc filename path
 
 # https://stackoverflow.com/questions/32955887/how-to-disassemble-16-bit-x86-boot-sector-code-in-gdb-with-x-i-pc-it-gets-tr
 # https://sourceware.org/bugzilla/show_bug.cgi?id=22869

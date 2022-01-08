@@ -1,1 +1,10 @@
- 
+Multi-tasking test
+
+
+
+1. clock
+2. some random or regular move object on window
+3. invoke by console
+4. calculate math
+5. more/less command
+6. cursor blinking , multi thread ?

@@ -2,11 +2,14 @@
 #include "mem.h"
 #include "common.h"
 #include "frame.h"
+#include "../lib/print.h"
 
 #define DIR0_PT_PHY(dir_idx)(PG_DIR0_ADDR +FRAME_SIZE+4096*dir_idx)
 
 uint32_t  pg_dir0_phy =  PG_DIR0_ADDR;
 #ifdef EARLY_INIT
+#include "vga.h"
+#include "console.h"
 uint32_t* pg_dir0 = (uint32_t*) PG_DIR0_ADDR ;
 #else
 uint32_t* pg_dir0 = (uint32_t*)( PG_DIR0_ADDR + KERNEL_V_START);
@@ -259,7 +262,7 @@ void set_pg_dir0_vmap(uint32_t va,uint32_t pa ,uint32_t flag){
 
 void init_pg_dir0_vmap(){
     uint32_t physical_address = 0;
-    clear();
+    
     init_pg_dir0();
     //identity mapping first 1MB code (boot up code)
     while( physical_address <  _1MB  ){
@@ -276,6 +279,9 @@ void init_pg_dir0_vmap(){
         physical_address+= FRAME_SIZE;
     }
 
+    vga_init();
+    vga_clear_all();
+    init_console();
     extern int _init_end;  
     printl("init_end");
     print_hex((int)&_init_end);

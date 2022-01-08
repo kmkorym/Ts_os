@@ -1,5 +1,7 @@
 
 #include "malloc.h"
+#include "mem.h"
+#include <stdint.h>
 #define CREATE_HEADER(addr,__type,__size,__link)\
     addr->magic = 0x87;\
     addr->type  = __type;\
@@ -237,9 +239,16 @@ void test_heap(){
 }
 
 void init_heap(){
-    heap_start = KERNEL_HEAP_START;
+    //extern uint32_t _heap_start;
+    //heap_start = (uint32_t)(&_heap_start);
+    // for current system design
+    // some user program is concat right after the end of data section
+    // which is also  &_heap_start linker symbol defined
+    
+    // because of this reason, can't use &_heap_start as start adress of heap 
+    heap_start = HEAP_START;
     index_head = (struct RegionHeader  *) heap_start;
-   
+    //printf("head start %x\n",heap_start); 
     CREATE_HEADER( index_head,REGION_FREE,HEAP_END-heap_start-R_HEADER_SIZE,NULL);
    
 }

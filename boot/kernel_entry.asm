@@ -34,7 +34,7 @@ call  main
 mov eax,IDT_TABLE_DESC
 lidt [eax]
 sti
-call parse_kargs
+;call parse_kargs
 
 jmp $
 ;tss_flush:

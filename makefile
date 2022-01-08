@@ -42,8 +42,14 @@ early_setup.bin: early_setup.elf
 early_setup.sym: early_setup.elf
 	objcopy --only-keep-debug   early_setup.elf   early_setup.sym
 
-early_setup.elf: early_setup.o  kernel/init_mem.o  lib/init_print.o lib/string.o
+early_setup.elf: early_setup.o  kernel/init_mem.o kernel/init_console.o kernel/init_vga.o lib/init_print.o lib/string.o
 	ld -m elf_i386 -nostdlib  -T esetup.ld  $^ -o $@
+
+kernel/init_console.o: kernel/init_vga.o
+	gcc ${CFLAGS} -ffreestanding  -D EARLY_INIT -c kernel/console.c -o kernel/init_console.o
+
+kernel/init_vga.o:
+	gcc ${CFLAGS} -ffreestanding  -D EARLY_INIT -c kernel/vga.c -o kernel/init_vga.o
 
 kernel/init_mem.o:
 	gcc ${CFLAGS} -ffreestanding  -D EARLY_INIT -c kernel/mem.c -o kernel/init_mem.o

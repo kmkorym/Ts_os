@@ -1,5 +1,15 @@
 #include "shell.h"
+#include "../lib/print.h"
+#include "../lib/string.h"
+#include "../kernel/common.h"
+#include "../drivers/com.h"
 #include "task.h"
+#include "console.h"
+#define DONWCASE   0
+#define UPCASE 1
+
+static uint32_t __case  = UPCASE; 
+
 // define commnads can execute when user type enter
 // halt -> quit computer
 // hello --> print hello from kernel
@@ -86,12 +96,47 @@ void  parse_command(char*s){
 }
 
 
+void shell_get_key_code(KEY_CODE keycode){
 
+    char c = (char)keycode;
 
+    switch (keycode){
+        case EMPTY:
+            break;
+        case UP_RELEASE:
+            window_move_up();
+            break;
+        case DOWN_RELEASE:
+            window_move_down();
+            break;  
+        case A ... Z: // pass through
+            if(__case  == DONWCASE){
+                c = c - 'A' + 'a';
+            }
+             //... AT   :  // pass through
+        case ZERO ... NINE: 
+        case HYPHEN   : case           EQU: case LEFT_BRACKET: case RIGHT_BRACKET:
+        case SEMICOLON: case  SINGLE_QUOTE: case ACUTE       : case BACK_SLASH:
+        case COMMA:     case  DOT:          case SLASH:        case WILDCARD: case SPACE:  
+            get_input_char(c);
+            break;
+        case ENTER:
+            flush_input_buffer();
+            break;
+        case BACKSPACE:
+            modify_input_cnt(-1);
+            break;
+        case PRINTSCR:
+            printf("printscr detected\n");
+            break;
+        case PRINTSCR_RELEASE:
+             printf("printscr_re detected\n");
+            break;
+        case PAUSE:
+             printf("pause detected\n");
+            break;
+    }
 
-
-
-void parse_serial_port_cmd(){
-
+    
 
 }
