@@ -8,3 +8,68 @@ Multi-tasking test
 4. calculate math
 5. more/less command
 6. cursor blinking , multi thread ?
+
+
+
+### Context Switch Review
+
+- Software Context Switch
+	- cooperative 
+	- preemptive
+	
+1. How to save context 
+	- every process call switch function to do context switch
+		- no matter is's cooperative / or preemptive by scheduler
+	- in switch function we only need to save context by kernel stack and switch function only switch between two kernel mode process
+		- save kernel stack and kerenl stack,cr3 
+		- kernel stack will save context which is arranged by OS (just use pushall)
+		- change cr3, stack 
+		- restore context by  popall
+		- eip is already save in stack
+		- case analyze
+			* in copperative case, if call switch_task
+			and then switch back, because kernel stack is the same, switch and no privledege switch --> OK
+			* 
+		- init_task 0
+		- multiple kernel task ??
+		- in preemptive case like timer 
+			- context in interrupt handler is OK
+			- when switch back to user stack and context, because kernel stack layout is the same as it is called , call to iret gives the same result as if it haven't context switch before ...
+			
+test-1  (test new context switch method)
+	There are two drawback of current context switch code
+	1. don't really save context, registers, tss field not updated/restore
+	2. use lots of assembly to save context, when there are lots of fields to save, need to use lots of hardcore offset + esp to achieve this, bad portability and extensibility	
+	
+	
+	- init task0 by start kernel context
+	- allocate kernel process 		
+	
+
+
+Shell 
+
+
+
+
+
+1. Console 
+2. Multitask
+	- kernel task
+	- switch between user task
+	- user task
+		- fork and execute (optional) and spawn
+		- preemptive switch by timer 
+		- process terminate 
+3. User Mode
+	- syscall
+	- VFS (optional)
+	- shell parser
+	- user lib and util (bin utils)
+	- porting libc (newlibc)
+
+
+		
+
+				
+				
