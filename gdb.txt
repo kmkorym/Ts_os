@@ -1,11 +1,18 @@
 
 define debug_script
 	lsb_main
-	p_console_vars
 end
 
 define break_points
-	b flush_input_buffer
+	b spawn_ram
+	b __spawn
+	b load_task
+	b switch_to_user
+	b *(switch_to_user+42)
+	b *(switch_to_user+49)
+	b *(switch_to_user+50)
+	b *(switch_to_user+51)
+	b *(switch_to_user+52)
 end
 
 define lsb1

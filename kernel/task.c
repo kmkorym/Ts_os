@@ -5,22 +5,26 @@
 #include "../lib/string.h"
 
 #define TASK_MAX 32
-#define TASK_STACK_V_BASE   ( 0xC0000000 - 0x1000 )
+//#define TASK_STACK_V_BASE   ( KERNEL_V_START - FRAME_SIZE )
 
 
 extern uint32_t read_eip();
+extern void  __context_switch(struct Task *new);
+extern void  __spawn(struct Task *new);
+extern void  __ret_trap();
+extern uint32_t* pg_dir0;
 
 struct Task  task_arr[MAX_TASK_NUM];
 struct Task*  current ;
 struct Task*  old_task ;
 
+//const uint32_t KSTACK_TOP = (KERNEL_V_START - FRAME_SIZE +FRAME_SIZE-sizeof(struct Task)-sizeof(int));
+
 //TODO fix hardcore TSS address
 gdt_entry_t* TSS_SEGMENT = ( gdt_entry_t*) 0x9028;
 tss_entry_t tss_entry;
 
-static struct simple_task simple_task_list[TASK_MAX];
-static  int task_head =  0 ; 
-static  int task_tail =  0 ; 
+
 
 static void gdt_set_gate(gdt_entry_t* entry, uint32_t base, uint32_t limit, uint8_t access,  uint8_t gran)
 {
@@ -51,8 +55,9 @@ uint32_t next_task_pos(uint32_t header_addr){
 }
 
 
-void create_task_address_space(uint32_t *dir, uint32_t base){
+void create_task_address_space(struct Task * task, uint32_t base){
 
+    uint32_t *dir; 
     struct TsExHeader   *header =  (struct TsExHeader   *) base;
 
     if(header->magic != 0xABCD1234){
@@ -63,16 +68,18 @@ void create_task_address_space(uint32_t *dir, uint32_t base){
         ASSERT(header->vma_data % FRAME_SIZE == 0 ,"load_task_from_ram");
     }
 
-  
+    dir = get_temp_va(task->phy_dir);
+
     uint32_t  img_text_base  =  base + header->lma_text;
     uint32_t  img_data_base  =  base + header->lma_data;
     uint32_t* page;
     uint32_t page_phy;
     uint32_t vma_img;
     uint32_t vma ;
+    //uint32_t *user_stack;
 
     // load text section
-    request_region_vmap(dir,header->vma_text,header->text_size,PAGE_FLG_KERNEL);
+    request_region_vmap(dir,header->vma_text,header->text_size,PAGE_FLG_USR);
 
     vma_img = img_text_base;
     vma     = header->vma_text & 0xFFFFF000;
@@ -89,7 +96,7 @@ void create_task_address_space(uint32_t *dir, uint32_t base){
     // load data section
     // assume data section aligned at page boundary
 
-    request_region_vmap(dir,header->vma_data,header->data_size,PAGE_FLG_KERNEL);
+    request_region_vmap(dir,header->vma_data,header->data_size,PAGE_FLG_USR);
     vma     = header->vma_data;
     vma_img = img_data_base ;
  
@@ -102,7 +109,25 @@ void create_task_address_space(uint32_t *dir, uint32_t base){
         vma+=FRAME_SIZE;
     }
 
+    // create user stack
+    request_region_vmap(dir, USTACK_FRAME,FRAME_SIZE,PAGE_FLG_USR);
+    
+    delete_temp_va((uint32_t)dir);
+}
 
+/*
+void exec_ram(uint32_t base){
+    create_task_address_space((uint32_t*)PAGE_DIR_VA,base);
+    jmp_eip(0);
+}
+*/
+
+void spawn_ram(uint32_t base){
+    struct Task * task ;
+    task = load_task((uint32_t*)pg_dir0,base);
+    __context_switch(task);
+    printl("spawn ram 1");
+    while(1){}
 }
 
 
@@ -142,24 +167,52 @@ void create_task_address_space(uint32_t *dir, uint32_t base){
 
 */
 
+uint32_t*  alloc_kstack_and_task(uint32_t* parent_dir,uint32_t new_cr3){
 
-struct Task * load_task(uint32_t* parent_dir,uint32_t task_hd_addr){
+    uint32_t * stack ;
+    uint32_t   stack_phy;
+    uint32_t * new_pg_dir;
+    struct Task * task;
+
+    new_pg_dir =  create_temp_va(new_cr3);
+
+    request_region_vmap(new_pg_dir, KSTACK_FRAME ,FRAME_SIZE,PAGE_FLG_KERNEL);
+    stack_phy  =  get_phy_from_dir(new_pg_dir,KSTACK_FRAME);
+    stack      =  create_temp_va(stack_phy);
+    task =   KSTACK_TO_TASK(stack);
+    task->phy_dir = new_cr3;
+    task->esp0 =  KSTACK_FRAME+ FRAME_SIZE  - sizeof(struct Task) - sizeof(int);
+    //task->esp =   KSTACK_FRAME;
+    task->ptid = current->tid;
+    task->state = TASK_ALLOCATED  ;
+    task->ttl = 10;
+    task->tid = get_next_tid();
+
+    // copy task to task_arr, duplicatd data
+    // TODO to use linked list to save space and reduce redundant data
+    task_arr[task->tid] = *task;
+
+    delete_temp_va((uint32_t)new_pg_dir);
+
+    return stack;
+}
+
+
     
+struct Task * load_task(uint32_t* parent_dir,uint32_t task_hd_addr){
     uint32_t  stack_base_phy,new_pg_dir_phy,rev_tb_phy,sys_pg_phy ;
-    uint32_t *new_stack = NULL;
-
+    uint32_t *kernel_stack,*user_stack,*pt_va;
     uint32_t *new_pg_dir        =  alloc_page(USER_P_START,MAX_MEM_SIZE,&new_pg_dir_phy);  
     uint32_t *rev_tb            =  alloc_page(USER_P_START,MAX_MEM_SIZE,&rev_tb_phy); 
     uint32_t *sys_pg            =  alloc_page(USER_P_START,MAX_MEM_SIZE,&sys_pg_phy); 
-    uint32_t new_tid;
+    uint32_t new_tid ;
+    uint32_t phy_pt,va;
     struct Task *task = NULL;
-    
 
     uint32_t i;
-    // link kernel space to new process  (except rev_tb,sys_tb)
-    for(i=PAGE_DIR_INDEX(KERNEL_V_START);i<=1021;++i){
-        new_pg_dir [i] = parent_dir[i];
-    }
+
+    user_stack = kernel_stack = NULL;
+
 
 
     //init page dir and rev dir , set some system mappings
@@ -168,34 +221,100 @@ struct Task * load_task(uint32_t* parent_dir,uint32_t task_hd_addr){
     sys_pg[1023] = new_pg_dir_phy | PAGE_FLG_KERNEL; 
     pg_dir_add(new_pg_dir ,rev_tb,1022,sys_pg_phy,PAGE_FLG_KERNEL);
 
+
+    // link kernel space to new process  (except rev_tb,sys_tb)
+    for(i=PAGE_DIR_INDEX(KERNEL_V_START);i<=1021;++i){
+        new_pg_dir [i] = parent_dir[i];
+    }
+    /*
+    request_region_vmap(new_pg_dir,KERNEL_V_START,KERNEL_P_START,PAGE_FLG_USR);
+
+    uint32_t * pt_src ;
+    for(va=KERNEL_V_START;va<KERNEL_V_START+KERNEL_P_START;){
+        phy_pt =  get_phy_from_dir(new_pg_dir,va);
+        pt_va  =  create_temp_va(phy_pt);
+        pt_src =  PAGE_TABLE_PTR(PAGE_TABLE_INDEX(va));
+        for(i=0;i<1024;++i){
+            pt_va[i]  = pt_src[i];
+            pt_va[i] |= PAGE_USER;
+            va+=FRAME_SIZE;
+        }
+        delete_temp_va((uint32_t)pt_va);
+    }
+    */
+
     //allocate Task struct and initial stack
     //0xC0000000 
 
-    request_region_vmap(new_pg_dir,TASK_STACK_V_BASE,FRAME_SIZE,PAGE_FLG_KERNEL);
-    stack_base_phy = get_phy_from_dir(new_pg_dir,TASK_STACK_V_BASE);
-    new_stack      = create_temp_va(stack_base_phy);
+    kernel_stack = alloc_kstack_and_task(parent_dir,new_pg_dir_phy);
+    task      = KSTACK_TO_TASK(kernel_stack);
+    new_tid   = task->tid;
+    // user stack , text , data 
+    
+    create_task_address_space(task,task_hd_addr);
 
-    task = (struct Task *)((uint32_t)new_stack+FRAME_SIZE-sizeof(struct Task));
-    task->phy_dir = new_pg_dir_phy;
-    task->esp0 = TASK_STACK_V_BASE+FRAME_SIZE-sizeof(struct Task);
-    task->ebp0 = task->esp0;
-    task->eip = 0;
-    task->ptid = current->tid;
-    task->state = TASK_ALLOCATED;
-    task->ttl = 10;
-    new_tid = task->tid = get_next_tid();
+    asm volatile("mov %%eax,%%cr3"::"a"(new_pg_dir_phy):);
+    asm volatile( "mov %%ax,%%ds" ::"a"(0x23):);
 
+    switch_to_user(0);
+
+
+    struct TrapFrame * tf ;
+    tf = (struct TrapFrame *)((char*)task - sizeof(*tf));
+
+    /*
+        H
+            stack layout :
+            stack_frame_base+ frame size
+            struct Task
+            iret registers
+            segments registers (ds,es ...) 
+            struct Context Register  <-- trap_frame   <-- esp
+            
+           
+        L
+    
+    */
+    task->esp = KSTACK_FRAME + FRAME_SIZE - sizeof(*task)-sizeof(*tf); 
+
+    memset((char*)tf,0,sizeof(*tf));
    
-    // copy task to task_arr, redundant data 
-    // TODO to use linked list to save space and reduce redundant data
-    task_arr[task->tid] = *task;
+    tf->cs = 0x1b;
+    tf->context_reg.eip = (uint32_t)&switch_to_user;
+    
+    tf->ds = tf->es = tf->gs = tf->fs = tf->ss = 0x23;
+    tf->iret_eip = 0 ;
+    tf->iret_esp = USTACK_FRAME+FRAME_SIZE-sizeof(int);
 
-    create_task_address_space(new_pg_dir,task_hd_addr);
+    
+    //enable interrupt when switch to user mode 
+    asm volatile("pushf\n\t"
+                 "popl %%eax\n\t"
+                 "orl  $0x000,%%eax\n\t"
+                 "movl %%eax,%0\n\t"
+                 :  "=r" (tf->eflags)
+                 :  
+                 :  "cc","eax");
+
+    task_arr[new_tid] = *task;
+
     delete_temp_va((uint32_t)new_pg_dir);
     delete_temp_va((uint32_t)rev_tb);
     delete_temp_va((uint32_t)sys_pg );
-    delete_temp_va((uint32_t) task & 0xFFFFF000 );
+    delete_temp_va((uint32_t) kernel_stack );
     return  &task_arr[new_tid];
+}
+
+
+void  context_switch(struct Task* new){
+   
+    if( current == new ){
+        return ;
+    }
+
+    tss_entry.esp0 = new->esp0;
+    tss_entry.ss0  = 0x10; 
+     __context_switch(new);
 }
 
 //https://csiflabs.cs.ucdavis.edu/~ssdavis/50/att-syntax.htm
@@ -211,23 +330,28 @@ struct Task * load_task(uint32_t* parent_dir,uint32_t task_hd_addr){
 
 */
 
-extern void  save_context();
-extern void  context_switch(struct Task *new);
-extern void  __switch_task();
-
 void init_task0(){
+    extern uint32_t karg_phy;
+    struct Task *task;
+    
+    uint32_t * kstack;
     uint32_t i ;
+
     for(i=0;i<MAX_TASK_NUM;++i){
         task_arr[i].state = 0;
     }
-    task_arr[0].tid = 0;
-    task_arr[0].ptid = 0;
-    task_arr[0].state = TASK_ALLOCATED ;
-    task_arr[0].ttl =  250 ;
-    //_save_context(&task_arr[0]);
-    current = &task_arr[0];
-}
 
+    // task 0 comes from start up code and data
+    // task 1 load init.c and execute
+    kstack = alloc_kstack_and_task(pg_dir0,PG_DIR0_ADDR);
+    task   = KSTACK_TO_TASK(kstack);
+    current = &task_arr[task->tid];
+    
+    setup_tss();
+    spawn_ram(PHY_TO_KVM(karg_phy));
+    printf("init task 0 end\n");
+    while(1){};
+}
 
 uint32_t get_next_tid(){
     uint32_t i;
@@ -240,7 +364,6 @@ uint32_t get_next_tid(){
     return 0;
 }
 
-
 void cond_schedule(){
     if(current->state& TASK_NEED_SCHED){
         schedule();
@@ -251,7 +374,7 @@ void schedule(){
     uint32_t i;
     struct Task* next_task = NULL;
     //uint32_t parent_id = current->ptid;
-    for(i=1;i<MAX_TASK_NUM;++i){
+    for(i=0;i<MAX_TASK_NUM;++i){
         if(task_arr[(current->tid+i)%MAX_TASK_NUM].state){
             next_task=&task_arr[(current->tid+i)%MAX_TASK_NUM];
             break;
@@ -259,11 +382,10 @@ void schedule(){
     }
     if(current->state){
         current->state &=~(TASK_NEED_SCHED);
-        save_context();
         current->ttl = 10;
         context_switch(next_task);
     }else{
-        __switch_task();
+        context_switch(next_task);
     }
 }
 
@@ -301,70 +423,62 @@ int terminate_process(){
 //                     will be used for isr and normal function call
 //                                        timer --> iret for target EIP
 
-
-
-
-// two questiob : 
-//      how to switch to right eip?
-//      is the saved old eip right?          
-//      gcc version for x86 don't support naked .... 
-
-
+// two question : 
+//      switch to new eip --> setup stack for iret       
+//      gcc version for x86 don't support naked,  is the saved old eip right? 
 
 void switch_to_user(uint32_t new_eip){
     // mov eax,0x8000000 ; default qemu memory size is 128MB = 0x8000000, if greater than 128MB it will be zeros when reference  ....
     // it seems like VM's behavior, not x86 real hardware
     uint32_t x = new_eip;
+
+    /////////////// 0x200 for enable interrupt
     asm volatile ( 
                     "movl  $0x23,%%eax \n\t"
-                    "pushl %%eax \n\t"
-
-                    "movl  $0x8000000, %%eax \n\t"
+                    "pushl %%eax \n\t" 
+                    "movl  $0xBFFFFFF0,%%eax \n\t"
                     "pushl %%eax\n\t"
 
                     "pushf \n\t"
                     "popl %%eax; \n\t"
-                    "orl $0x200,%%eax \n\t"
+                    "orl $0x000,%%eax \n\t"
                     "pushl %%eax \n\t"
 
-                    "movl $0x1B,%%eax \n\t"
+                    "movl $0x18,%%eax \n\t"
+                    "pushl %%eax \n\t"            
+                    "movl $0,%%eax \n\t"
                     "pushl %%eax \n\t"
-
-                    "movl %0,%%eax \n\t"
-                    "pushl %%eax \n\t"             
-                  
+                    
                     "movl $0x23,%%eax \n\t"
                     "mov %%ax,%%ds \n\t"
                     "mov %%ax,%%es \n\t"   
                     "mov %%ax,%%fs \n\t"   
-                    "mov %%ax,%%gs \n\t"   
+                    "mov %%ax,%%gs \n\t" 
                     "iret \n\t"            
                     : 
-                    : "r"(x)
+                    : 
                     :"eax"
     );
 }
-
-
-//;0xe05b
 
 
 void setup_tss(){
     uint32_t base = (uint32_t) &tss_entry;
     uint32_t limit = base + sizeof(tss_entry);   
     gdt_set_gate(TSS_SEGMENT,base,limit,0xE9,0x00);
-    tss_entry.ss0  = 0x10;  // Set the kernel stack segment.
-    tss_entry.esp0 = 0x15F000; // Set the kernel stack pointer.
+    //why 2B?
+    asm volatile( "ltr %%ax" ::"a"(0x28):);
 }
 
-
+/*
 void user_loop(){
     while(1){
         execute_task();
     }
 }
+*/
 
-
+/*
 void execute_task(){
 
     if(task_head == task_tail){
@@ -396,29 +510,16 @@ void execute_task(){
     pop_task();
     printl("finish task");
 }
+*/
 
-
+// template code 
 void kill_and_reschedule(){
     printl("kill and reschedule");
-    pop_task();
-    switch_to_user((uint32_t)user_loop);
+    //pop_task();
+    //switch_to_user((uint32_t)user_loop);
 }
 
 
-void add_task( struct simple_task task){
-    int next_head = (task_head  + 1) % TASK_MAX;
-    if( next_head == task_tail){
-        printl("task is full"); return;
-    }
-    simple_task_list[task_head] = task;
-    task_head = next_head;
-}
 
-void pop_task(){
-    if(task_head == task_tail){
-        return ;
-    }
-    ++task_tail;
-}
 
 

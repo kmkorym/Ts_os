@@ -40,7 +40,7 @@ struct IDTDesc {
 
 
 
-extern struct idt_ptr_struct IDT_TABLE_DESC; // note  idt_ptr_struct*  is wrong
+extern uint32_t IDT_TABLE_DESC; // note  idt_ptr_struct*  is wrong
 struct IDTDesc idt[IRQ_MAX+1];
 
 void IRQ_set_mask(unsigned char IRQline) {
@@ -95,6 +95,15 @@ void page_fault_handler(uint32_t err_code){
 void  irq_handler_entry( uint32_t irq, uint32_t err_code){
     //print_hex();
 
+    if( irq == 13 ){
+        printstr("handler # ");
+        print_hex(irq);
+        printl("");
+        printstr("err # ");
+        print_hex(err_code);
+        while(1){};
+    }
+
     if (irq!=32 && irq!=33  ){
         printstr("handler #");
         print_hex(irq);
@@ -144,6 +153,9 @@ extern void isr##n();\
 init_trap_gate((n),(uint32_t)isr##n,0x08);
 
 void init_idt(){
+
+    struct idt_ptr_struct* idt_desc =  (struct idt_ptr_struct*) &IDT_TABLE_DESC ;
+
     config_pic();
     //IRQ_set_mask(32);
     INIT_IRQ(0);
@@ -212,8 +224,18 @@ void init_idt(){
     INIT_IRQ(62);
     INIT_IRQ(63);
     //idt[63].type_attr = 0xEE; ; // user privelge level for system call
-    IDT_TABLE_DESC.limit = sizeof(struct IDTDesc)*( IRQ_MAX+1)-1;
-    IDT_TABLE_DESC.base =  (uint32_t)&idt;
+    idt_desc->limit = sizeof(struct IDTDesc)*( IRQ_MAX+1)-1;
+    idt_desc->base =  (uint32_t)&idt;
+
+    // load idt
+    asm volatile (
+            "lidt (%%eax)\n\t"
+            :
+            : "a"(&IDT_TABLE_DESC)
+            : 
+
+    );  
+
     return;
 }
 

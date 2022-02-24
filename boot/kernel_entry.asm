@@ -17,32 +17,21 @@ add ebx,_ledata
 mov edx, karg_phy
 mov [edx],ebx
 
-
-
-
 mov eax,GDT_DESC2
 sgdt [eax]
 mov eax,GDT_DESC2+2
-mov ebx,0xC0009000
+mov ebx,0x9000
 mov [eax],ebx
+
 mov eax,GDT_DESC2
 lgdt [eax]
 
-
 call  main
 
-mov eax,IDT_TABLE_DESC
-lidt [eax]
 sti
 ;call parse_kargs
 
 jmp $
-;tss_flush:
-;mov ax, 0x2B     
-;ltr ax 
-
-
-
 
 
 ; must init user space page tables ...
@@ -61,9 +50,9 @@ jmp $
 
 ;call user_loop
 
-
+; the value of this table will be modfied before load gdt2
 GDT_DESC2:
-    dw 0x1f ; size of table
+    dw 0x2f ; size of table
     dd 0xC0709000
         
 
@@ -79,21 +68,32 @@ IDT_TABLE_DESC:
 %macro ISR_NOERRCODE 1  ; define a macro, taking one parameter
   [GLOBAL isr%1]        ; %1 accesses the first parameter.
   isr%1:
+    mov ax,0x23
+    mov ds,ax
+    mov es,ax
+    mov fs,ax
+    mov gs,ax
     cli
     pusha
+
+
     push dword 0
     push dword %1
     call irq_handler_entry
     add esp, 8
     popa
     call cond_schedule
-    sti
     iret   
 %endmacro
 
 %macro ISR_ERRCODE 1
   [GLOBAL isr%1]
   isr%1:
+    mov ax,0x23
+    mov ds,ax
+    mov es,ax
+    mov fs,ax
+    mov gs,ax
     cli
     push eax
     mov  eax,[esp+4]
@@ -104,8 +104,8 @@ IDT_TABLE_DESC:
     add esp,8
     popa
     pop eax
-    add esp,4
-    sti
+    
+    add esp,4 ; /* this line should be checked  */
     iret
 %endmacro
 
@@ -122,14 +122,16 @@ ISR_NOERRCODE 9
 ISR_ERRCODE   10
 ISR_ERRCODE   11
 ISR_ERRCODE   12
-GLOBAL isr13
-[extern   kill_and_reschedule  ]
-isr13:
-  cli
-  add esp,8 ; error code + original eip
-  push dword  kill_and_reschedule
-  sti
-iret
+ISR_ERRCODE   13
+
+;GLOBAL isr13
+;[extern   kill_and_reschedule  ]
+;isr13:
+;  cli
+;  add esp,8 ; error code + original eip
+;  push dword  kill_and_reschedule
+;  sti
+;iret
 ISR_ERRCODE   14
 ISR_NOERRCODE 15
 ISR_NOERRCODE 16

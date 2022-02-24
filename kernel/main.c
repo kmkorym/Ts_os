@@ -306,24 +306,6 @@ void test_fat16(){
 }
 
 
-void parse_kargs(){
-    extern uint32_t* pg_dir0;
-    extern uint32_t karg_phy;
-    struct Task *task;
-    task = load_task(pg_dir0,karg_phy+KERNEL_V_START);
-    uint32_t header2 = next_task_pos(karg_phy+KERNEL_V_START);
-    task = load_task(pg_dir0,header2);
-    uint32_t header3 = next_task_pos(header2);
-    task = load_task(pg_dir0,header3);
-    //schedule();
-    //printl("return from task2");  
-    //switch_task(task);
-    //printl("return from task1");
-    //task = load_task(pg_dir0,karg_phy+KERNEL_V_START);
-    //switch_task(task);
-    //printl("return from task2");
-}
-
 
 
 void test_printf1(){
@@ -393,17 +375,16 @@ int main(){
     test_printf2();
     //test_ata_driver();
 
-    //test_fat16();
-    
-    setup_tss();
+    //test_fat16(); 
+    //setup_tss();
     
     init_idt();
     init_devices();
    // test_heap();
-    //init_task0();
-    //init_syscall();
-    //parse_kargs();
+    init_syscall();
+    init_task0();
+    //
     //printl("return parse kargs");
-    //while(1){};
+    while(1){};
     return 0;
 }

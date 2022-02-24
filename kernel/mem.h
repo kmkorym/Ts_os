@@ -15,7 +15,7 @@
 #define REV_TB_VA (0XFFFFFFFC)
 #define FRAME_SIZE 4096
 #define PG_DIR0_ADDR    (_1MB) 
-
+#define PHY_TO_KVM(phy)((phy+KERNEL_V_START))
 
 #define PAGE_DIR_INDEX(addr)(addr>>22)
 #define PAGE_TABLE_INDEX(addr)((addr>>12)&0x3FF)
@@ -23,12 +23,22 @@
 #define PAGE_ALIGNED(addr)(addr% FRAME_SIZE == 0)
 #define KERNEL_LOAD_ADDR 0x9030
 #define KERNEL_V_START   0xC0000000
+#define KERNEL_IMG_START   KERNEL_V_START  + KERNEL_P_START
 #define KERNEL_P_START  (8*_1MB)
 #define KERNEL_VMAP_SIZE 0x800000
 #define MAX_MEM_SIZE  (128*_1MB)
 
 #define USER_P_START  (16*_1MB)
-#define USER_V_STACK  (0xC0000000-4)
+
+
+/*
+    """BASE""" address of  stack frame
+*/
+#define USTACK_FRAME (KERNEL_V_START-FRAME_SIZE)
+#define KSTACK_FRAME  (IX_TO_VA(1021,1023))
+
+
+
 
 #define KERNEL_HEAP_END    0xC1000000
 #define PRINT_ADDR(addr)\
@@ -38,12 +48,14 @@
 
 
 #ifdef EARLY_INIT
-
 void init_page_settings();
 void setup_page_tables();
 #else
 void patch_page_table_k();
 void test_page();
+
+#define PAGE_DIR_VA IX_TO_VA(1022,1023)
+
 #endif
 
 #define VA_MAP_NULL 0
@@ -64,7 +76,7 @@ int pg_dir_no_entry(uint32_t* dir,uint32_t va);
 void delete_temp_va(uint32_t va);
 uint32_t*  alloc_page(uint32_t start_phy,uint32_t end_phy,uint32_t* phy);
 uint32_t*  get_temp_va(uint32_t pa);
-uint32_t * lookup_pt_temp_va(uint32_t* dir,uint32_t di);
+uint32_t*  lookup_pt_temp_va(uint32_t* dir,uint32_t di);
 uint32_t get_phy_from_dir(uint32_t *dir,uint32_t va);
 int  pg_dir_add(uint32_t* dir,uint32_t *rev_tb,uint32_t di,uint32_t pt_phy,uint32_t flag);
 int request_region_vmap(uint32_t *dir,uint32_t va_start,uint32_t size,uint32_t flag);

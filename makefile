@@ -20,12 +20,12 @@ deploy: kimage boot.bin early_setup.bin early_setup.elf  kernel.bin   kernel/ini
 
 build: kimage
 
-kimage: boot.bin early_setup.bin kernel.bin user_tasks kernel.sym early_setup.sym 
-	cat boot.bin  early_setup.bin  kernel.bin  usr/init/tasks/*.bin  > kimage
+kimage: boot.bin early_setup.bin kernel.bin init_task kernel.sym early_setup.sym 
+	cat boot.bin  early_setup.bin  kernel.bin  usr/init/init.bin  > kimage
 	truncate -s 1M kimage
 
-user_tasks :
-	make -C usr/init/
+init_task :
+	make -C usr/init/ init.bin
 
 kernel.bin: kernel.elf
 	objcopy kernel.elf -O binary kernel.bin
