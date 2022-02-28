@@ -20,7 +20,7 @@ mov [edx],ebx
 mov eax,GDT_DESC2
 sgdt [eax]
 mov eax,GDT_DESC2+2
-mov ebx,0x9000
+mov ebx,0xC0009000
 mov [eax],ebx
 
 mov eax,GDT_DESC2
@@ -68,46 +68,62 @@ IDT_TABLE_DESC:
 %macro ISR_NOERRCODE 1  ; define a macro, taking one parameter
   [GLOBAL isr%1]        ; %1 accesses the first parameter.
   isr%1:
-    mov ax,0x23
+    cli
+    push gs
+    push fs
+    push es
+    push ds
+    pusha
+    mov ax,0x10
     mov ds,ax
     mov es,ax
     mov fs,ax
     mov gs,ax
-    cli
-    pusha
-
-
     push dword 0
     push dword %1
     call irq_handler_entry
     add esp, 8
     popa
-    call cond_schedule
+    pop ds
+    pop es
+    pop fs
+    pop gs
+    ;call cond_schedule
     iret   
 %endmacro
 
 %macro ISR_ERRCODE 1
   [GLOBAL isr%1]
   isr%1:
-    mov ax,0x23
+    cli
+    mov [ERR_CODE_TMP],esp   ; save address firstly
+    push gs
+    push fs
+    push es
+    push ds
+    pusha
+    mov ax,0x10
     mov ds,ax
     mov es,ax
     mov fs,ax
     mov gs,ax
-    cli
-    push eax
-    mov  eax,[esp+4]
-    pusha
+    mov eax,[ERR_CODE_TMP]
+    mov eax,[eax]
     push eax      ; error code
     push dword %1 ; isr number  
     call irq_handler_entry
-    add esp,8
+    add esp, 8
     popa
-    pop eax
-    
-    add esp,4 ; /* this line should be checked  */
+    pop ds
+    pop es
+    pop fs
+    pop gs
+    add esp,4 ; pop error code
     iret
 %endmacro
+
+ERR_CODE_TMP:
+dd  0xAABB
 
 ISR_NOERRCODE 0
 ISR_NOERRCODE 1
@@ -186,18 +202,33 @@ ISR_NOERRCODE 62
 GLOBAL isr63
 isr63:
   cli
+  push gs
+  push fs
+  push es
+  push ds
+  push edi
   push edx
   push ecx
   push ebx
   push eax
+  mov ax,0x10
+  mov ds,ax
+  mov es,ax
+  mov fs,ax
+  mov gs,ax
   mov edi,eax
   shl edi,2
   add edi,syscall_table
-  add esp,4
   call [edi]
-  add esp,12
-  sti
-iret
+  add esp,20
+  [global   __ret_syscall]
+  __ret_syscall:
+  pop ds
+  pop es
+  pop fs
+  pop gs
+  ;sti
+  iret
 
 
 

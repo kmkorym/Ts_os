@@ -11,10 +11,7 @@ Shell Implementation
       - usr/init.c --> init.bin --> cat kimage init.bin
       - linker script add header and size of data/text
       - create task0
-        % need to load interrupt table before run init.c 
-          (it use system call,)
-        % code for save eax,ebx general register in context switch
-          must be modified (currently it not really save these registers)
+
       - test case 1 :
         - all in kernel mode
           task 1 :  original start up code/data \
@@ -54,6 +51,8 @@ Shell Implementation
 
 (gdb) x/1xb 0x900d
 0x900d: 0x98
+
+x/1xb 0xC000900d
 
 
  p/x *((struct ContextRegister *) ($esp+sizeof(struct ContextRegister)))

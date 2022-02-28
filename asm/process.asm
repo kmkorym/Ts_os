@@ -1,6 +1,5 @@
 [GLOBAL read_eip]
 [GLOBAL __context_switch]
-[GLOBAL __ret_trap]
 [extern current]
 [extern exec_current]
 [extern KSTACK_TOP]
@@ -24,12 +23,6 @@ read_eip:
 
 ; https://stackoverflow.com/questions/12315879/pushing-a-32-bit-register-onto-a-16-bit-stack
 ; push 16 bit registers still occupy 4 bytes ...
-__ret_trap:
-  pop ds
-  pop es
-  pop fs
-  pop gs
-  iret
 
 
 

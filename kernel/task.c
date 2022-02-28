@@ -3,6 +3,7 @@
 #include "frame.h"
 #include "common.h"
 #include "../lib/string.h"
+#include "sys.h"
 
 #define TASK_MAX 32
 //#define TASK_STACK_V_BASE   ( KERNEL_V_START - FRAME_SIZE )
@@ -11,7 +12,7 @@
 extern uint32_t read_eip();
 extern void  __context_switch(struct Task *new);
 extern void  __spawn(struct Task *new);
-extern void  __ret_trap();
+extern void  __ret_syscall();
 extern uint32_t* pg_dir0;
 
 struct Task  task_arr[MAX_TASK_NUM];
@@ -213,10 +214,8 @@ struct Task * load_task(uint32_t* parent_dir,uint32_t task_hd_addr){
 
     user_stack = kernel_stack = NULL;
 
-
-
     //init page dir and rev dir , set some system mappings
-    pg_dir_add(new_pg_dir ,rev_tb,1023,new_pg_dir_phy,PAGE_FLG_KERNEL);
+    pg_dir_add(new_pg_dir ,rev_tb,1023,rev_tb_phy,PAGE_FLG_KERNEL);
 
     sys_pg[1023] = new_pg_dir_phy | PAGE_FLG_KERNEL; 
     pg_dir_add(new_pg_dir ,rev_tb,1022,sys_pg_phy,PAGE_FLG_KERNEL);
@@ -226,22 +225,6 @@ struct Task * load_task(uint32_t* parent_dir,uint32_t task_hd_addr){
     for(i=PAGE_DIR_INDEX(KERNEL_V_START);i<=1021;++i){
         new_pg_dir [i] = parent_dir[i];
     }
-    /*
-    request_region_vmap(new_pg_dir,KERNEL_V_START,KERNEL_P_START,PAGE_FLG_USR);
-
-    uint32_t * pt_src ;
-    for(va=KERNEL_V_START;va<KERNEL_V_START+KERNEL_P_START;){
-        phy_pt =  get_phy_from_dir(new_pg_dir,va);
-        pt_va  =  create_temp_va(phy_pt);
-        pt_src =  PAGE_TABLE_PTR(PAGE_TABLE_INDEX(va));
-        for(i=0;i<1024;++i){
-            pt_va[i]  = pt_src[i];
-            pt_va[i] |= PAGE_USER;
-            va+=FRAME_SIZE;
-        }
-        delete_temp_va((uint32_t)pt_va);
-    }
-    */
 
     //allocate Task struct and initial stack
     //0xC0000000 
@@ -252,12 +235,6 @@ struct Task * load_task(uint32_t* parent_dir,uint32_t task_hd_addr){
     // user stack , text , data 
     
     create_task_address_space(task,task_hd_addr);
-
-    asm volatile("mov %%eax,%%cr3"::"a"(new_pg_dir_phy):);
-    asm volatile( "mov %%ax,%%ds" ::"a"(0x23):);
-
-    switch_to_user(0);
-
 
     struct TrapFrame * tf ;
     tf = (struct TrapFrame *)((char*)task - sizeof(*tf));
@@ -280,21 +257,14 @@ struct Task * load_task(uint32_t* parent_dir,uint32_t task_hd_addr){
     memset((char*)tf,0,sizeof(*tf));
    
     tf->cs = 0x1b;
-    tf->context_reg.eip = (uint32_t)&switch_to_user;
+    tf->context_reg.eip = (uint32_t)&__ret_syscall;
     
     tf->ds = tf->es = tf->gs = tf->fs = tf->ss = 0x23;
     tf->iret_eip = 0 ;
     tf->iret_esp = USTACK_FRAME+FRAME_SIZE-sizeof(int);
-
-    
     //enable interrupt when switch to user mode 
-    asm volatile("pushf\n\t"
-                 "popl %%eax\n\t"
-                 "orl  $0x000,%%eax\n\t"
-                 "movl %%eax,%0\n\t"
-                 :  "=r" (tf->eflags)
-                 :  
-                 :  "cc","eax");
+    tf->eflags   = 0x0; // #########
+    // #############################
 
     task_arr[new_tid] = *task;
 
@@ -346,8 +316,8 @@ void init_task0(){
     kstack = alloc_kstack_and_task(pg_dir0,PG_DIR0_ADDR);
     task   = KSTACK_TO_TASK(kstack);
     current = &task_arr[task->tid];
-    
     setup_tss();
+    register_syscall(SYS_EXIT,terminate_process);
     spawn_ram(PHY_TO_KVM(karg_phy));
     printf("init task 0 end\n");
     while(1){};
@@ -390,48 +360,13 @@ void schedule(){
 }
 
 
-/*
-    current implementation only remove tcb from global task array
-    but task resources not really release
-*/
-
-int terminate_process(){
-    printl("terminate process");
-    current->state = 0;
-    ///task_arr[current->tid].state = 0;
-    schedule();
-    return 0;
-}
-
-
-
-/*
-    iret stack
-    w/o priviledge switch
-    [esp + 12] eflags
-    [esp + 8]  cs
-    [esp + 4]  eip
-    [esp]      error code?
-*/
-
-
-// task switch cooperative path + timer path
-// in kernel mode
-//        call schedule 
-//             --> save registers
-//             --> context switch
-//                     will be used for isr and normal function call
-//                                        timer --> iret for target EIP
-
-// two question : 
-//      switch to new eip --> setup stack for iret       
-//      gcc version for x86 don't support naked,  is the saved old eip right? 
+// this piece of code mainly for debug and test, should never be called
 
 void switch_to_user(uint32_t new_eip){
     // mov eax,0x8000000 ; default qemu memory size is 128MB = 0x8000000, if greater than 128MB it will be zeros when reference  ....
     // it seems like VM's behavior, not x86 real hardware
     uint32_t x = new_eip;
-
+    //asm volatile ("jmp $0x1b,$0");
     /////////////// 0x200 for enable interrupt
     asm volatile ( 
                     "movl  $0x23,%%eax \n\t"
@@ -444,7 +379,7 @@ void switch_to_user(uint32_t new_eip){
                     "orl $0x000,%%eax \n\t"
                     "pushl %%eax \n\t"
 
-                    "movl $0x18,%%eax \n\t"
+                    "movl $0x1B,%%eax \n\t"
                     "pushl %%eax \n\t"            
                     "movl $0,%%eax \n\t"
                     "pushl %%eax \n\t"
@@ -466,6 +401,8 @@ void setup_tss(){
     uint32_t base = (uint32_t) &tss_entry;
     uint32_t limit = base + sizeof(tss_entry);   
     gdt_set_gate(TSS_SEGMENT,base,limit,0xE9,0x00);
+    tss_entry.esp0 = 0xFFFFFF00;
+    tss_entry.ss0  = 0x10;
     //why 2B?
     asm volatile( "ltr %%ax" ::"a"(0x28):);
 }
@@ -511,6 +448,14 @@ void execute_task(){
     printl("finish task");
 }
 */
+
+
+int terminate_process(){
+    printf("terminate process\n");
+    current->state = 0;
+    schedule();
+    return 0;
+}
 
 // template code 
 void kill_and_reschedule(){

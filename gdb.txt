@@ -5,9 +5,8 @@ end
 
 define break_points
 	b spawn_ram
-	b __spawn
 	b load_task
-	b switch_to_user
+	b create_task_address_space
 	b *(switch_to_user+42)
 	b *(switch_to_user+49)
 	b *(switch_to_user+50)

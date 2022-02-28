@@ -4,7 +4,6 @@
 #include "../drivers/com.h"
 #include "./common.h"
 #include "./task.h"
-#include "./sys.h"
 
 #define IRQ_MAX 63
 #define PIC1		0x20		/* IO base address for master PIC */
@@ -140,17 +139,17 @@ void  irq_handler_entry( uint32_t irq, uint32_t err_code){
     }
 }
 
-void init_trap_gate(uint8_t irq,uint32_t  handler_offset,uint16_t selector){   
+void init_trap_gate(uint8_t irq,uint32_t  handler_offset,uint16_t selector,uint8_t flag){   
     idt[irq].offset_1 = handler_offset & 0xFFFF;
     idt[irq].offset_2 = (handler_offset >> 16) & 0xFFFF;
     idt[irq].selector = selector;
     idt[irq].zero = 0;
-    idt[irq].type_attr = 0x8E; 
+    idt[irq].type_attr = flag; 
 }
 
 #define INIT_IRQ(n) \
 extern void isr##n();\
-init_trap_gate((n),(uint32_t)isr##n,0x08);
+init_trap_gate((n),(uint32_t)isr##n,0x08,0x8F);
 
 void init_idt(){
 
@@ -223,7 +222,8 @@ void init_idt(){
     INIT_IRQ(61);
     INIT_IRQ(62);
     INIT_IRQ(63);
-    //idt[63].type_attr = 0xEE; ; // user privelge level for system call
+    // DPL for system call must be 3
+    idt[63].type_attr = 0xEF; ; 
     idt_desc->limit = sizeof(struct IDTDesc)*( IRQ_MAX+1)-1;
     idt_desc->base =  (uint32_t)&idt;
 
@@ -239,10 +239,3 @@ void init_idt(){
     return;
 }
 
-
-
-void* syscall_table[SYSCALL_NUM]={0};
-void init_syscall(){
-    syscall_table[SYS_EXIT]=terminate_process;
-    syscall_table[SYS_PRINTL]=printl;
-}

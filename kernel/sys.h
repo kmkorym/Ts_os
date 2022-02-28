@@ -31,6 +31,9 @@ int sys_##name(int p1){\
     asm volatile("int $0x3f" : : "a" (num),"b" (p1),"c" (p2),"d" (p3):); \
 }
 
+void init_syscall();
+int  register_syscall(int nr,void* func);
+
 
 
 

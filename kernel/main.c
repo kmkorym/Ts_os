@@ -371,8 +371,8 @@ int main(){
     vga_clear_all();
     //test_page();
     
-    test_printf1();
-    test_printf2();
+    //test_printf1();
+   // test_printf2();
     //test_ata_driver();
 
     //test_fat16(); 
