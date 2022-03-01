@@ -14,7 +14,8 @@ build_test_mbr: boot.bin
 
 deploy: kimage boot.bin early_setup.bin early_setup.elf  kernel.bin   kernel/init_mem.o early_setup.o kernel_entry.o process.o  kernel.elf kernel.sym early_setup.sym  ${OBJS}
 	mv   $^  build/
-
+	mv   kernel/init*.o build/
+    
 %.o: %.c
 	gcc ${CFLAGS} -ffreestanding -c $< -o $@
 
@@ -46,16 +47,16 @@ early_setup.elf: early_setup.o  kernel/init_mem.o kernel/init_console.o kernel/i
 	ld -m elf_i386 -nostdlib  -T esetup.ld  $^ -o $@
 
 kernel/init_console.o: kernel/init_vga.o
-	gcc ${CFLAGS} -ffreestanding  -D EARLY_INIT -c kernel/console.c -o kernel/init_console.o
+	gcc ${CFLAGS} -fcommon -fno-zero-initialized-in-bss -ffreestanding  -D EARLY_INIT -c kernel/console.c -o kernel/init_console.o
 
 kernel/init_vga.o:
-	gcc ${CFLAGS} -ffreestanding  -D EARLY_INIT -c kernel/vga.c -o kernel/init_vga.o
+	gcc ${CFLAGS}  -fcommon -fno-zero-initialized-in-bss -ffreestanding  -D EARLY_INIT -c kernel/vga.c -o kernel/init_vga.o
 
 kernel/init_mem.o:
-	gcc ${CFLAGS} -ffreestanding  -D EARLY_INIT -c kernel/mem.c -o kernel/init_mem.o
+	gcc ${CFLAGS} -fcommon -fno-zero-initialized-in-bss -ffreestanding  -D EARLY_INIT -c kernel/mem.c -o kernel/init_mem.o
 
 lib/init_print.o:
-	gcc ${CFLAGS} -ffreestanding  -D EARLY_INIT -c lib/print.c  -o lib/init_print.o
+	gcc ${CFLAGS} -fcommon -fno-zero-initialized-in-bss -ffreestanding  -D EARLY_INIT -c lib/print.c  -o lib/init_print.o
 
 kernel_entry.o:
 	nasm  boot/kernel_entry.asm  -f elf32  -o kernel_entry.o 

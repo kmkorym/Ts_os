@@ -3,6 +3,10 @@ define debug_script
 	lsb_main
 end
 
+define dd1
+x/48xh 0xad48
+end
+
 define break_points
 	b spawn_ram
 	b load_task

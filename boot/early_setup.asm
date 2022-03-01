@@ -24,7 +24,7 @@ call  init_pg_dir0_vmap
  ;mov [eax],eax
  mov ebx,_init_end
  jmp ebx
- [SECTION .end1]
+
 
  
 
