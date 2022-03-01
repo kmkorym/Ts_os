@@ -7,7 +7,6 @@ mov eax,ebx
 mov eax,ecx
 mov ecx,eax
 call main
-jmp $
 call exit
 
 

@@ -28,28 +28,6 @@ lgdt [eax]
 
 call  main
 
-sti
-;call parse_kargs
-
-jmp $
-
-
-; must init user space page tables ...
-;call init_page_settings
-
-;[extern switch_to_user]
-;[extern user_loop]
-;push USER_START
-;call switch_to_user
-
-;USER_START:
-;_ULOOP:
-;call user_loop
-
-
-
-;call user_loop
-
 ; the value of this table will be modfied before load gdt2
 GDT_DESC2:
     dw 0x2f ; size of table
@@ -61,7 +39,6 @@ global IDT_TABLE_DESC
 IDT_TABLE_DESC:
     dw 0
     dd 0
-
 
 
 [extern cond_schedule]
@@ -210,24 +187,26 @@ isr63:
   push edx
   push ecx
   push ebx
-  push eax
+  mov edi,eax
   mov ax,0x10
   mov ds,ax
   mov es,ax
   mov fs,ax
   mov gs,ax
-  mov edi,eax
   shl edi,2
   add edi,syscall_table
   call [edi]
-  add esp,20
+  pop ebx
+  pop ecx
+  pop edx
+  pop edi
   [global   __ret_syscall]
   __ret_syscall:
   pop ds
   pop es
   pop fs
   pop gs
-  ;sti
+  sti
   iret
 
 

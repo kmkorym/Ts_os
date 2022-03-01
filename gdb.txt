@@ -8,14 +8,7 @@ x/48xh 0xad48
 end
 
 define break_points
-	b spawn_ram
-	b load_task
-	b create_task_address_space
-	b *(switch_to_user+42)
-	b *(switch_to_user+49)
-	b *(switch_to_user+50)
-	b *(switch_to_user+51)
-	b *(switch_to_user+52)
+	b isr63
 end
 
 define lsb1
