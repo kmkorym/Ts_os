@@ -7,6 +7,11 @@
 #define MAX_TASK_NUM 32
 #define TASK_PRESENT 0x1
 #define TASK_NEED_SCHED 0x2
+#define KSTACK_TO_TASK(stack) \
+((struct Task *)((uint32_t)(stack)+FRAME_SIZE-sizeof(struct Task)))
+
+
+
 /*
 Multi-tasking
 
@@ -44,20 +49,47 @@ struct TsExHeader{
    uint32_t   data_size;
 }__attribute__((packed));
 
+/*
+   pusha context:
+   
+   push order :
+   eax             
+   .
+   .
+   esi            <-- base+4
+   edi lowest     <--base 
 
+*/
 
 struct ContextRegister{
-   uint32_t esp;
-   uint32_t ebp;
-   uint32_t eip;
+   uint32_t eflags;   // save eflags for one who call context_switch (coperative schedule)
    uint32_t edi;
    uint32_t esi;
-   uint32_t eax;
+   uint32_t ebp;
+   uint32_t esp;   // by x86 referece document , esp field is not used for popa
+                   // https://c9x.me/x86/html/file_module_x86_id_249.html
    uint32_t ebx;
-   uint32_t ecx;
    uint32_t edx;
-   uint32_t flags;
-};
+   uint32_t ecx;
+   uint32_t eax;
+   uint32_t eip;
+}__attribute__((packed));
+
+
+struct TrapFrame{
+   struct ContextRegister context_reg;
+   uint32_t ds;
+   uint32_t es;
+   uint32_t fs;
+   uint32_t gs;
+   uint32_t iret_eip;
+   uint32_t cs;
+   //uint16_t pad1;
+   uint32_t eflags;
+   uint32_t iret_esp;
+   uint32_t ss;
+   //uint16_t pad2;
+}__attribute__((packed));
 
 
 
@@ -105,28 +137,19 @@ struct gdt_entry_struct
 } __attribute__((packed));
 typedef struct gdt_entry_struct gdt_entry_t;
 
-struct simple_task
-{
-    uint32_t task_id;
-    uint32_t esp;
-    uint32_t ebp;
-    uint32_t eip;
-};
-
-
-#define TASK_ALLOCATED 1
-
 struct Task{
-   // field of registers
-   uint32_t esp0;
-   uint32_t eip;
+   uint32_t esp;    // this is for kernel stack,when context switch happen
+                    // other register context will save above kernel stack
    uint32_t phy_dir;
-   uint32_t ebp0;
-   uint32_t ptid;   
+   uint32_t esp0;   // for TSS
+   uint32_t ptid;   // parent task id
    uint32_t tid;
    uint32_t state;   /* 0: unallocated */
    uint32_t ttl;
-   // struct ContextRegister regs;
+  // int      intr_enable;
+
+   //struct ContextRegister * context_reg;
+
 }__attribute__((packed));
 
 
@@ -141,10 +164,7 @@ void execute_task();
 void setup_tss();
 void user_loop();
 void kill_and_reschedule();
-void pop_task();
-void add_task( struct simple_task task);
 void switch_to_user(uint32_t new_eip);
-void switch_task(struct Task *task);
 struct Task * load_task(uint32_t* parent_dir,uint32_t task_hd_addr);
 int terminate_process();
 #endif

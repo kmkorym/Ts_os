@@ -17,7 +17,7 @@ Features and facilities are implemented on the current kernel are :
 - Multi-tasking and round-robin scheduler
 - FAT16 filesystem (read/write/search/create/delete) file
 - Console can browse output history (user control the console by up/down key to show specific part of history)
-- User mode (debugging now)
+- User mode (system calls are ongoing, only 3 now)
 
 ## Limitation
 

@@ -1,3 +1,83 @@
+Shell Implementation
+
+
+
+1. Create Real First User Task
+    * 1-1 load kernel mode allocated task init
+      - exec and spawn 
+        exec  --> assume page table and other resources is prepared already ,
+                  load process image and then execute it
+        spawn --> allocate resourec and exec 
+      - usr/init.c --> init.bin --> cat kimage init.bin
+      - linker script add header and size of data/text
+      - create task0
+
+      - test case 1 :
+        - all in kernel mode
+          task 1 :  original start up code/data \
+          task 2 :  allocate task resurce and context switch --> init.c 
+                      - after task 2 finished, return to task 1
+
+        init_task0 
+          --> create task 1 and task 2 --> coperatrive context switch to task 2 
+          --> go back to task 1 and check it is actually continue
+          --> current context switch code can't run as the task start because 
+              new task has no stack setup before it execute, it doesn't know where to return eip
+              from the stack
+          
+          change test scenario to : allocate task 0 and spawn task 1, 
+          task 1 finished --> call scehdule --> context switch back to task 0
+      
+      - Timer schedule
+        - current schedule in timer ISR ( slow but simple )
+
+      - Other interrupts are enable 
+        
+    * 1-2 same as 1-1  but use user mode !!
+      - gdt, idt table for user mode
+      - tss setup
+        % TSS must loaded by GDT decsciptor point to a TSS structure 
+           size is TSS size , base is TSS address
+              go to 0-1
+      - kernel stack setup and task struct location in kernel mode
+        % one kernel stack each task, 1 page
+      - return to user mode setup ??
+        % context swich code, user mode version
+        % need modify tss fields
+        % data segment priviliedge check ...
+      - test code for user mode
+        - memory access test
+        - priviledged instruction test
+        - kernel stack / user stack bounday
+    * 1-3 fork and exec Implementation
+
+    * 1-4 shell.c
+
+
+context_switch --> how to save eflags ??
+eip: 0xc0803321
+esp : 0xc0efff6c
+(gdb) x/1xb 0x900d
+0x900d: 0x98
+
+x/1xb 0xC000900d
+
+
+ p/x *((struct ContextRegister *) ($esp+sizeof(struct ContextRegister)))
+
+ p/x *((struct ContextRegister *)(kernel_stack+4906-sizeof(*task)-sizeof(*context)))
+ p/x *((struct ContextRegister *)(stack+4906-sizeof(struct Task)-sizeof(struct ContextRegister)))
+ p/x *((struct Task*)(stack+4906-sizeof(struct Task)))
+
+ ;; fore debug in context_switch
+ p/x *((struct ContextRegister *)(($esp)))
+ 
+ p/x *((struct ContextRegister *)((uint32_t)(kernel_stack)+4096-sizeof(struct Task)-sizeof(struct ContextRegister)))
+ 
+ p/x *((struct Task *)((uint32_t)(stack)+4096-sizeof(struct Task)))
+
+ 
+
 Multi-tasking test
 
 
@@ -8,3 +88,10 @@ Multi-tasking test
 4. calculate math
 5. more/less command
 6. cursor blinking , multi thread ?
+
+
+(gdb) p/x task
+$1 = 0xc081281c
+(gdb) p/x current 
+$2 = 0xc0812800
+0xc081281c

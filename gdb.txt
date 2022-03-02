@@ -1,11 +1,15 @@
 
 define debug_script
 	lsb_main
-	p_console_vars
+end
+
+define dd1
+x/48xh 0xad48
 end
 
 define break_points
-	b flush_input_buffer
+	b init_task0
+	layout split
 end
 
 define lsb1

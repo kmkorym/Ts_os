@@ -10,12 +10,11 @@ SECTIONS
    }
    .data :{
     *(.data)
-    *(.bss)
+    *(.COMMON);
+    *(COMMON);
+     SHORT(0xAECF);
    }
-    .end1 :{
-      *(.end1)
-    }
-   _init_end = . ;
+   _init_end = .;
   
    
 /* Stabs debugging sections.  */

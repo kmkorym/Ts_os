@@ -147,6 +147,13 @@ db 0x00 ; base
 db 10010010b    ; access byte
 db 11001111b     ; flag G=1 D=1
 db 0x00 ; base
+;USR_CODE:
+;dw 0xFFFF ; limit
+;dw 0x00 ;base
+;db 0x00 ; base
+;db 10011000b     ; access byte
+;db 11001111b     ; flag G=1 D=1
+;db 0x00 ; base
 USR_CODE:
 dw 0xFFFF ; limit
 dw 0x00 ;base

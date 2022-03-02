@@ -17,53 +17,20 @@ add ebx,_ledata
 mov edx, karg_phy
 mov [edx],ebx
 
-
-
-
 mov eax,GDT_DESC2
 sgdt [eax]
 mov eax,GDT_DESC2+2
 mov ebx,0xC0009000
 mov [eax],ebx
+
 mov eax,GDT_DESC2
 lgdt [eax]
 
-
 call  main
 
-mov eax,IDT_TABLE_DESC
-lidt [eax]
-sti
-;call parse_kargs
-
-jmp $
-;tss_flush:
-;mov ax, 0x2B     
-;ltr ax 
-
-
-
-
-
-; must init user space page tables ...
-;call init_page_settings
-
-;[extern switch_to_user]
-;[extern user_loop]
-;push USER_START
-;call switch_to_user
-
-;USER_START:
-;_ULOOP:
-;call user_loop
-
-
-
-;call user_loop
-
-
+; the value of this table will be modfied before load gdt2
 GDT_DESC2:
-    dw 0x1f ; size of table
+    dw 0x2f ; size of table
     dd 0xC0709000
         
 
@@ -74,20 +41,30 @@ IDT_TABLE_DESC:
     dd 0
 
 
-
-[extern cond_schedule]
+;[extern cond_schedule]
 %macro ISR_NOERRCODE 1  ; define a macro, taking one parameter
   [GLOBAL isr%1]        ; %1 accesses the first parameter.
   isr%1:
     cli
+    push gs
+    push fs
+    push es
+    push ds
     pusha
+    mov ax,0x10
+    mov ds,ax
+    mov es,ax
+    mov fs,ax
+    mov gs,ax
     push dword 0
     push dword %1
     call irq_handler_entry
     add esp, 8
     popa
-    call cond_schedule
-    sti
+    pop ds
+    pop es
+    pop fs
+    pop gs
     iret   
 %endmacro
 
@@ -95,19 +72,34 @@ IDT_TABLE_DESC:
   [GLOBAL isr%1]
   isr%1:
     cli
-    push eax
-    mov  eax,[esp+4]
+    mov [ERR_CODE_TMP],esp   ; save address firstly
+    push gs
+    push fs
+    push es
+    push ds
     pusha
+    mov ax,0x10
+    mov ds,ax
+    mov es,ax
+    mov fs,ax
+    mov gs,ax
+    mov eax,[ERR_CODE_TMP]
+    mov eax,[eax]
     push eax      ; error code
     push dword %1 ; isr number  
     call irq_handler_entry
-    add esp,8
+    add esp, 8
     popa
-    pop eax
-    add esp,4
-    sti
+    pop ds
+    pop es
+    pop fs
+    pop gs
+    add esp,4 ; pop error code
     iret
 %endmacro
+
+ERR_CODE_TMP:
+dd  0xAABB
 
 ISR_NOERRCODE 0
 ISR_NOERRCODE 1
@@ -122,14 +114,16 @@ ISR_NOERRCODE 9
 ISR_ERRCODE   10
 ISR_ERRCODE   11
 ISR_ERRCODE   12
-GLOBAL isr13
-[extern   kill_and_reschedule  ]
-isr13:
-  cli
-  add esp,8 ; error code + original eip
-  push dword  kill_and_reschedule
-  sti
-iret
+ISR_ERRCODE   13
+
+;GLOBAL isr13
+;[extern   kill_and_reschedule  ]
+;isr13:
+;  cli
+;  add esp,8 ; error code + original eip
+;  push dword  kill_and_reschedule
+;  sti
+;iret
 ISR_ERRCODE   14
 ISR_NOERRCODE 15
 ISR_NOERRCODE 16
@@ -184,18 +178,34 @@ ISR_NOERRCODE 62
 GLOBAL isr63
 isr63:
   cli
+  push gs
+  push fs
+  push es
+  push ds
+  push edi
   push edx
   push ecx
   push ebx
-  push eax
   mov edi,eax
+  mov ax,0x10
+  mov ds,ax
+  mov es,ax
+  mov fs,ax
+  mov gs,ax
   shl edi,2
   add edi,syscall_table
-  add esp,4
   call [edi]
-  add esp,12
-  sti
-iret
+  pop ebx
+  pop ecx
+  pop edx
+  pop edi
+  [global   __ret_syscall]
+  __ret_syscall:
+  pop ds
+  pop es
+  pop fs
+  pop gs
+  iret
 
 
 

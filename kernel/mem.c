@@ -97,7 +97,7 @@ uint32_t*  get_temp_va(uint32_t pa){
 
 
 
-uint32_t* create_page_table(uint32_t* dir,uint32_t* rev_tb,uint32_t va,uint32_t flag){
+uint32_t*  create_page_table(uint32_t* dir,uint32_t* rev_tb,uint32_t va,uint32_t flag){
     
     if( ! pg_dir_no_entry(dir,va)){
         return NULL;
@@ -226,24 +226,31 @@ void enable_paging(uint32_t dir_addr){
 }
 
 
-
+#ifdef EARLY_INIT
 
 /*
+    this function is called after enter 32 bits mode  
+    and before enable page table 
+
     1.identity mapping first 1MB code (boot up code)
     2. 1MB ~ 8MB  is for page tables (kernel space) virtual address start from 3G
     3. 8MB ~ 16MB for kernel sections virtual address starts from 3G+8MB
     4. 16NB ~ MAX_MEM_SIZE for user  (user space so virtual address starts from 0)
 */
-// higher kernel setting settings before enable page table
-#ifdef EARLY_INIT
 
 int init_pg_dir0(){
+
+    uint32_t  rev_tb_phy  =  DIR0_PT_PHY(1023) ;
+    uint32_t  sys_tb_phy  =  DIR0_PT_PHY(1022) ;
+
     memzero((void*)pg_dir0,FRAME_SIZE);
-    uint32_t * rev_tb  = create_page_table(pg_dir0,NULL,0xFFC00000,PAGE_FLG_KERNEL);
-    rev_tb[1023] = pt_phy_from_dir(pg_dir0,1023)  | PAGE_P;
-    pg_dir_add(pg_dir0 ,rev_tb,1022,DIR0_PT_PHY(1022),PAGE_FLG_KERNEL);
-   
-    //TODO create system mapping table ...
+    memzero((void*)rev_tb_phy,FRAME_SIZE);
+    memzero((void*)sys_tb_phy ,FRAME_SIZE);
+    // 1023  for reverse mapping
+    // 1022  for tempory system mapping
+    pg_dir_add( pg_dir0 , (uint32_t*) rev_tb_phy,1023,rev_tb_phy,PAGE_FLG_KERNEL);
+    pg_dir_add( pg_dir0 , (uint32_t*) rev_tb_phy,1022,sys_tb_phy,PAGE_FLG_KERNEL);
+    ((uint32_t*)sys_tb_phy)[1023] = PG_DIR0_ADDR  | PAGE_FLG_KERNEL; 
 }
 
 /*
@@ -259,8 +266,8 @@ void set_pg_dir0_vmap(uint32_t va,uint32_t pa ,uint32_t flag){
     pt[PAGE_TABLE_INDEX(pa)] = pa | PAGE_P;
 }
 
-
 void init_pg_dir0_vmap(){
+
     uint32_t physical_address = 0;
     
     init_pg_dir0();
@@ -296,11 +303,13 @@ void init_page_settings(){
 // can't request same region when it's request once
 // if want to request again, must delete the region first
 int request_region_vmap(uint32_t *dir,uint32_t va_start,uint32_t size,uint32_t flag){
+
     uint32_t  va;
     uint32_t  va_end;
     uint32_t *new_pt,*pt_now;
     uint32_t * rev_tb  =  0;
     uint32_t  new_rev_va_flg = 0;
+    uint32_t dir_flg = PAGE_FLG_KERNEL;
     
     va_end =   (va_start+size) & 0xFFFFF000;
     va_start = va_start & 0xFFFFF000;
@@ -314,7 +323,15 @@ int request_region_vmap(uint32_t *dir,uint32_t va_start,uint32_t size,uint32_t f
     new_pt = pt_now = NULL;
 
     for(va=va_start;va<=va_end;va+=FRAME_SIZE){
-        new_pt = create_page_table(dir,rev_tb,va,PAGE_FLG_KERNEL);
+
+        if( va < KERNEL_V_START){
+            dir_flg = PAGE_FLG_USR;
+        }
+
+
+        // flag arguemnt use case, for kernel stack of each process , although it's in user address space
+        // its page entry  must be kernel
+        new_pt = create_page_table(dir,rev_tb,va,dir_flg);
         if(new_pt){  
             if(pt_now){
                 delete_temp_va((uint32_t)pt_now);
@@ -340,6 +357,10 @@ int request_region_vmap(uint32_t *dir,uint32_t va_start,uint32_t size,uint32_t f
 
     }
 
+    if(new_pt){
+         delete_temp_va((uint32_t)new_pt);
+    }
+
     if(new_rev_va_flg){
         delete_temp_va((uint32_t)rev_tb);
     }
@@ -351,7 +372,7 @@ int request_region_vmap(uint32_t *dir,uint32_t va_start,uint32_t size,uint32_t f
 
 uint32_t*  alloc_page(uint32_t start_phy,uint32_t end_phy,uint32_t* phy){
     uint32_t  _phy =  alloc_frame(start_phy,end_phy);
-    uint32_t  *ptr = create_temp_va(_phy);
+    uint32_t  *ptr =  create_temp_va(_phy);
     memzero((void*)ptr,FRAME_SIZE);
     *phy = _phy;
     ASSERT(_phy && ptr ,"allocate page");

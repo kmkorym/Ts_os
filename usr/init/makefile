@@ -20,12 +20,12 @@ all :  ${BINS}
 	mkdir -p tasks
 	mv ${BINS} tasks
 
-
 build:
 	make   ${CFILE:.c=.bin}  
 	
 %.bin: %.elf 
 	objcopy   $<  -O binary $@ 
+	objcopy --only-keep-debug $<  $(subst .elf,.sym,$<) 
 	
 %.elf: start.o  %.o ${INCLUDE_OBJS}
 	ld -m elf_i386 -nostdlib  -T init.ld  $^ -o $@
@@ -38,5 +38,5 @@ start.o: ${INCLUDE_OBJS}
 
 
 clean:
-	rm -f ./*.o ./*.elf ./*.bin  ../lib/*.o
+	rm -f ./*.o ./*.elf ./*.bin  ../lib/*.o ./*.sym
 	rm -rf tasks/

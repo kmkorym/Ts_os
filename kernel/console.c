@@ -64,8 +64,8 @@ uint32_t console_max_row  = 0 ;
 uint32_t cosole_ctl_flag = 0;
 
 #ifdef EARLY_INIT
-char history[CONSOLE_HISTORY_SIZE];
-char window[VGA_MAX_COL*VGA_MAX_ROW];
+char history[CONSOLE_HISTORY_SIZE] ;
+char window[VGA_MAX_COL*VGA_MAX_ROW] ;
 #else
 #include "malloc.h"
 char *history;

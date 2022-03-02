@@ -1,6 +1,6 @@
 #include "vga.h"
 
-static VGA_PARAM vga_param;
+VGA_PARAM vga_param;
 
 
 /*
