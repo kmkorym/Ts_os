@@ -41,7 +41,7 @@ IDT_TABLE_DESC:
     dd 0
 
 
-[extern cond_schedule]
+;[extern cond_schedule]
 %macro ISR_NOERRCODE 1  ; define a macro, taking one parameter
   [GLOBAL isr%1]        ; %1 accesses the first parameter.
   isr%1:
@@ -65,7 +65,6 @@ IDT_TABLE_DESC:
     pop es
     pop fs
     pop gs
-    ;call cond_schedule
     iret   
 %endmacro
 
@@ -206,7 +205,6 @@ isr63:
   pop es
   pop fs
   pop gs
-  sti
   iret
 
 

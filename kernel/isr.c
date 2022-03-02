@@ -137,6 +137,8 @@ void  irq_handler_entry( uint32_t irq, uint32_t err_code){
         // Send reset signal to master. (As well as slave, if necessary).
         outb(0x20, 0x20);
     }
+
+    cond_schedule();
 }
 
 void init_trap_gate(uint8_t irq,uint32_t  handler_offset,uint16_t selector,uint8_t flag){   

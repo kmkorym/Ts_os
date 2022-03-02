@@ -7,7 +7,15 @@ int main(){
     // this will access kernel address space from user space, must trigger #GP
     //char * p = (char*)0xC0000000;
     //*p = 3;
-    printl(s);
+    //sleep
+    int i = 0 ;
+    int ret = foo(4, 5);
+    while(1){
+        i = 0;
+        
+        while(i<0x8FFFFFF){++i;};
+        printl(s);
+    }
     //while(1){}
     return 0;
 }

@@ -1,11 +1,12 @@
 #define SYSCALL_NUM 64
 #define SYS_EXIT 0
 #define SYS_PRINTL 0x10
+#define SYS_FOO 0x20
 
 
 int sys_exit();
 int sys_printl();
-
+int sys_foo();
 
 #define DEFINE_SYSCALL0(num,name)\
 int sys_##name(){\
@@ -23,13 +24,13 @@ int sys_##name(int p1){\
 
 
 
-#define SYSCALL2(num,p1,p2)\
-    asm volatile("int $0x3f" : : "a" (num),"b" (p1),"c" (p2):); \
-}
+#define DEFINE_SYSCALL2(num,name,p1,p2)\
+int sys_##name(int p1,int p2){\
+    int ret;\
+    asm volatile("int $0x3f" : "=a"(ret): "a" (num),"b" (p1),"c" (p2):); \
+    return ret;\
+}\
 
-#define SYSCALL3(num,p1,p2,p3)\
-    asm volatile("int $0x3f" : : "a" (num),"b" (p1),"c" (p2),"d" (p3):); \
-}
 
 void init_syscall();
 int  register_syscall(int nr,void* func);

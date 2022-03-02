@@ -27,6 +27,11 @@ Shell Implementation
           
           change test scenario to : allocate task 0 and spawn task 1, 
           task 1 finished --> call scehdule --> context switch back to task 0
+      
+      - Timer schedule
+        - current schedule in timer ISR ( slow but simple )
+
+      - Other interrupts are enable 
         
     * 1-2 same as 1-1  but use user mode !!
       - gdt, idt table for user mode
@@ -49,6 +54,9 @@ Shell Implementation
     * 1-4 shell.c
 
 
+context_switch --> how to save eflags ??
+eip: 0xc0803321
+esp : 0xc0efff6c
 (gdb) x/1xb 0x900d
 0x900d: 0x98
 
@@ -69,18 +77,6 @@ x/1xb 0xC000900d
  p/x *((struct Task *)((uint32_t)(stack)+4096-sizeof(struct Task)))
 
  
-
- 0x92 = eflags
- display/x *0xffbfefd0
- display/x *0xffbfefd4
- display/x *0xffbfefd8
- display/x *0xffbfefdc
- display/x *0xffbfefe0
- 
- b *(switch_to_user+49)
- b *(switch_to_user+50)
- b *(switch_to_user+51)
- b *(switch_to_user+52)
 
 Multi-tasking test
 

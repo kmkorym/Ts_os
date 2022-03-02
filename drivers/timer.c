@@ -13,14 +13,11 @@ void timer_handler(){
     if(freq_counter>=TIMER_FREQUENCY){
         secs+=1;
         freq_counter=0; 
-        //printl("timer is here");
-
     }
     current->ttl-=1;
     if(!current->ttl){
         current->state |= TASK_NEED_SCHED;
     }
-    
 }
 
 

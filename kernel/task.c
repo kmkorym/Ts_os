@@ -127,8 +127,6 @@ void spawn_ram(uint32_t base){
     struct Task * task ;
     task = load_task((uint32_t*)pg_dir0,base);
     __context_switch(task);
-    printl("spawn ram 1");
-    while(1){}
 }
 
 
@@ -185,7 +183,7 @@ uint32_t*  alloc_kstack_and_task(uint32_t* parent_dir,uint32_t new_cr3){
     task->esp0 =  KSTACK_FRAME+ FRAME_SIZE  - sizeof(struct Task) - sizeof(int);
     //task->esp =   KSTACK_FRAME;
     task->ptid = current->tid;
-    task->state = TASK_ALLOCATED  ;
+    task->state = TASK_PRESENT;
     task->ttl = 10;
     task->tid = get_next_tid();
 
@@ -263,7 +261,7 @@ struct Task * load_task(uint32_t* parent_dir,uint32_t task_hd_addr){
     tf->iret_eip = 0 ;
     tf->iret_esp = USTACK_FRAME+FRAME_SIZE-sizeof(int);
     //enable interrupt when switch to user mode 
-    tf->eflags   = 0x0; // #########
+    tf->eflags   = 1<<9; // #########
     // #############################
 
     task_arr[new_tid] = *task;
@@ -284,7 +282,7 @@ void  context_switch(struct Task* new){
 
     tss_entry.esp0 = new->esp0;
     tss_entry.ss0  = 0x10; 
-     __context_switch(new);
+    __context_switch(new);
 }
 
 //https://csiflabs.cs.ucdavis.edu/~ssdavis/50/att-syntax.htm
@@ -319,8 +317,13 @@ void init_task0(){
     setup_tss();
     register_syscall(SYS_EXIT,terminate_process);
     spawn_ram(PHY_TO_KVM(karg_phy));
+    asm volatile("sti");
     printf("init task 0 end\n");
-    while(1){};
+    while(1){
+        i = 0;
+        while(i<0x8FFFFFF){++i;};
+        printf("I am kernel\n");
+    };
 }
 
 uint32_t get_next_tid(){
@@ -335,7 +338,7 @@ uint32_t get_next_tid(){
 }
 
 void cond_schedule(){
-    if(current->state& TASK_NEED_SCHED){
+    if(current->state & TASK_NEED_SCHED){
         schedule();
     }
 }
@@ -344,7 +347,7 @@ void schedule(){
     uint32_t i;
     struct Task* next_task = NULL;
     //uint32_t parent_id = current->ptid;
-    for(i=0;i<MAX_TASK_NUM;++i){
+    for(i=1;i<=MAX_TASK_NUM;++i){
         if(task_arr[(current->tid+i)%MAX_TASK_NUM].state){
             next_task=&task_arr[(current->tid+i)%MAX_TASK_NUM];
             break;

@@ -40,6 +40,7 @@ __context_switch:
   ;; save context , we only need to save esp and cr3
   ;; other registers will save above stack
   pusha
+  pushf
   mov [ecx], esp ; save stack of current
 
    ; current = new_task
@@ -51,6 +52,7 @@ __context_switch:
   mov eax,[ecx+4] 
   mov cr3,eax
   ;; remember to restore TSS.ESP0 field ...
+  popf
   popa
   ret
 

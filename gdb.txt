@@ -8,7 +8,8 @@ x/48xh 0xad48
 end
 
 define break_points
-	b isr63
+	b init_task0
+	layout split
 end
 
 define lsb1

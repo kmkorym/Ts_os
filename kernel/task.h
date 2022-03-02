@@ -62,6 +62,7 @@ struct TsExHeader{
 */
 
 struct ContextRegister{
+   uint32_t eflags;   // save eflags for one who call context_switch (coperative schedule)
    uint32_t edi;
    uint32_t esi;
    uint32_t ebp;
@@ -136,9 +137,6 @@ struct gdt_entry_struct
 } __attribute__((packed));
 typedef struct gdt_entry_struct gdt_entry_t;
 
-#define TASK_ALLOCATED   0x1
-#define TASK_READY       0x2
-
 struct Task{
    uint32_t esp;    // this is for kernel stack,when context switch happen
                     // other register context will save above kernel stack
@@ -148,6 +146,7 @@ struct Task{
    uint32_t tid;
    uint32_t state;   /* 0: unallocated */
    uint32_t ttl;
+  // int      intr_enable;
 
    //struct ContextRegister * context_reg;
 
